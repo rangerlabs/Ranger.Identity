@@ -4,7 +4,7 @@ DOCKER_TAG=''
 if [ $TRAVIS_EVENT_TYPE != "pull_request" ]; then
   case "$TRAVIS_BRANCH" in
     "master")
-      DOCKER_TAG=1.0.$TRAVIS_BUILD_NUMBER
+      DOCKER_TAG=2.0.$TRAVIS_BUILD_NUMBER
       ;;
     "dev")
       DOCKER_TAG=dev
