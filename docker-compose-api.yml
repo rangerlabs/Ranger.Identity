@@ -1,0 +1,19 @@
+version: '3.5'
+services:
+    api:
+        image: ranger.identity:dev
+        container_name: identity
+        ports:
+            - '4000:5000'
+        networks:
+            - identity
+            - ranger
+
+networks:
+    ranger:
+        name: ranger-network
+        external: true
+
+    identity:
+        name: identity-network
+        external: true

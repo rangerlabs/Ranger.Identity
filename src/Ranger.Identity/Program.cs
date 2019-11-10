@@ -1,0 +1,61 @@
+﻿
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using Autofac.Extensions.DependencyInjection;
+using Microsoft.AspNetCore;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Logging;
+using Ranger.Logging;
+
+namespace Ranger.Identity
+{
+    public class Program
+    {
+        public static async Task Main(string[] args)
+        {
+            var config = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json", optional: false, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .Build();
+
+            var host = BuildHost(config["serverBindingUrl"], args);
+            using (var scope = host.Services.CreateScope())
+            {
+                var identityDbInitializer = scope.ServiceProvider.GetRequiredService<IIdentityDbContextInitializer>();
+                var configurationDbInitializer = scope.ServiceProvider.GetRequiredService<IConfigurationDbContextInitializer>();
+                var persistedGrantsDbInitializer = scope.ServiceProvider.GetRequiredService<IPersistedGrantDbContextInitializer>();
+
+                var env = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
+
+                identityDbInitializer.Migrate();
+                await identityDbInitializer.EnsureRowLevelSecurityApplied();
+                await identityDbInitializer.Seed();
+                configurationDbInitializer.Migrate();
+                persistedGrantsDbInitializer.Migrate();
+            }
+            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == Microsoft.Extensions.Hosting.Environments.Development)
+            {
+                IdentityModelEventSource.ShowPII = true;
+            }
+            host.Run();
+        }
+
+        public static IHost BuildHost(string serverBindingUrl, string[] args) =>
+            Host.CreateDefaultBuilder(args)
+            .UseServiceProviderFactory(new AutofacServiceProviderFactory())
+            .ConfigureWebHostDefaults(builder =>
+            {
+                builder.UseUrls(serverBindingUrl);
+                builder.UseLogging();
+                builder.UseStartup<Startup>();
+                builder.UseContentRoot(Directory.GetCurrentDirectory());
+            })
+            .Build();
+    }
+}

@@ -1,0 +1,1 @@
+dotnet ef database update -p ./src/Ranger.Identity.Data/Ranger.Identity.Data.csproj -c IdentityDbContext -s ./src/Ranger.Identity/Ranger.Identity.csproj 

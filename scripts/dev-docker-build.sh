@@ -1,0 +1,1 @@
+docker build -t ranger.identity:dev --build-arg MYGET_API_KEY=$MYGET_KEY --build-arg BUILD_CONFIG=Debug --build-arg ASPNETCORE_ENVIRONMENT=Development .
