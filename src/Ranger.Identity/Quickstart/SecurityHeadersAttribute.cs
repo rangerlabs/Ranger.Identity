@@ -32,6 +32,8 @@ namespace IdentityServer4.Quickstart.UI
                 //csp += "upgrade-insecure-requests;";
                 // also an example if you need client images to be displayed from twitter
                 // csp += "img-src 'self' https://pbs.twimg.com;";
+                csp += "font-src 'self' https://fonts.gstatic.com;";
+                csp += "style-src 'self' https://fonts.googleapis.com;";
 
                 // once for standards compliant browsers
                 if (!context.HttpContext.Response.Headers.ContainsKey("Content-Security-Policy"))

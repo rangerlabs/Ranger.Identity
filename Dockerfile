@@ -4,6 +4,14 @@ WORKDIR /app
 ARG MYGET_API_KEY
 ARG BUILD_CONFIG="Release"
 
+ENV NODE_VERSION 10.15.3
+ENV NODE_DOWNLOAD_SHA 6c35b85a7cd4188ab7578354277b2b2ca43eacc864a2a16b3669753ec2369d52
+RUN curl -SL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.gz" --output nodejs.tar.gz \
+    && echo "$NODE_DOWNLOAD_SHA nodejs.tar.gz" | sha256sum -c - \
+    && tar -xzf "nodejs.tar.gz" -C /usr/local --strip-components=1 \
+    && rm nodejs.tar.gz \
+    && ln -s /usr/local/bin/node /usr/local/bin/nodejs
+
 RUN mkdir -p /app/vsdbg && touch /app/vsdbg/touched
 ENV DEBIAN_FRONTEND noninteractive
 RUN if [ "${BUILD_CONFIG}" = "Debug" ]; then \
@@ -14,11 +22,17 @@ RUN if [ "${BUILD_CONFIG}" = "Debug" ]; then \
     fi
 ENV DEBIAN_FRONTEND teletype
 
+COPY package*.json ./
+
+RUN npm install && \
+    npm install -g --unsafe-perm node-sass
+
 COPY *.sln ./
 COPY ./src ./src
 COPY ./test ./test
 COPY ./scripts ./scripts
 
+RUN npm run scss
 RUN ./scripts/create-nuget-config.sh ${MYGET_API_KEY}
 RUN dotnet publish -c ${BUILD_CONFIG} -o /app/published
 

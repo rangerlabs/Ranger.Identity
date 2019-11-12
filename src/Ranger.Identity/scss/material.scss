@@ -1,0 +1,32 @@
+$mdc-theme-primary: #276e18;
+$mdc-theme-secondary: #276e18;
+$mdc-theme-background: #fff;
+$mdc-typography-font-family: unquote("'Lato', sans-serif");
+
+@import '../../../node_modules/material-components-web/material-components-web';
+
+.mdc-top-app-bar {
+    --mdc-theme-primary: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.mdc-text-field {
+    background-color: none;
+}
+.mdc-top-app-bar__section {
+    padding: 12px 24px;
+}
+.mdc-typography--headline5 {
+    font-size: 1.6917rem;
+    font-weight: 300;
+}
+
+mdc-top-app-bar__section a h5 {
+    align-content: center;
+    margin: 0px;
+}
+
+a {
+    color: #000;
+    text-decoration: none;
+}

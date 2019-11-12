@@ -7,17 +7,23 @@ namespace Ranger.Identity
     public class NewApplicationUserCreated : IEvent
     {
         public string Domain { get; }
+        public string UserId { get; }
         public string Email { get; }
         public string FirstName { get; }
         public string Role { get; }
         public string RegistrationKey { get; }
         public IEnumerable<string> AuthorizedProjects { get; }
 
-        public NewApplicationUserCreated(string domain, string email, string firstName, string role, string registrationKey, IEnumerable<string> authorizedProjects = null)
+        public NewApplicationUserCreated(string domain, string userId, string email, string firstName, string role, string registrationKey, IEnumerable<string> authorizedProjects = null)
         {
             if (string.IsNullOrWhiteSpace(domain))
             {
                 throw new System.ArgumentException($"{nameof(domain)} was null or whitespace.");
+            }
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                throw new System.ArgumentException($"{nameof(userId)} was null or whitespace.");
             }
 
             if (string.IsNullOrWhiteSpace(email))
@@ -41,6 +47,7 @@ namespace Ranger.Identity
             }
 
             this.Domain = domain;
+            this.UserId = userId;
             this.Email = email;
             this.FirstName = firstName;
             this.Role = role;

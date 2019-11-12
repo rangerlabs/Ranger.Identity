@@ -1,4 +1,5 @@
 using System;
+using System.Web;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
@@ -44,8 +45,6 @@ namespace Ranger.Identity
                 throw;
             }
 
-
-            var passwordHasher = new PasswordHasher<RangerUser>();
             var user = new RangerUser
             {
                 Id = Guid.NewGuid().ToString(),
@@ -61,6 +60,7 @@ namespace Ranger.Identity
             try
             {
                 await userManager.CreateAsync(user);
+                await userManager.AddToRoleAsync(user, command.Role);
             }
             catch (Exception ex)
             {
@@ -68,9 +68,9 @@ namespace Ranger.Identity
                 throw new RangerException(ex.Message);
             }
 
-            var emailToken = await userManager.GenerateEmailConfirmationTokenAsync(user);
+            var emailToken = HttpUtility.UrlEncode(await userManager.GenerateEmailConfirmationTokenAsync(user));
 
-            busPublisher.Publish(new NewApplicationUserCreated(command.Domain, command.Email, user.FirstName, command.Role, emailToken, command.PermittedProjectIds), context);
+            busPublisher.Publish(new NewApplicationUserCreated(command.Domain, user.Id, command.Email, user.FirstName, command.Role, emailToken, command.PermittedProjectIds), context);
         }
     }
 }

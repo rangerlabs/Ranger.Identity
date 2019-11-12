@@ -51,7 +51,7 @@ namespace Ranger.Identity
                 Id = Guid.NewGuid().ToString(),
                 UserName = command.Email,
                 Email = command.Email,
-                EmailConfirmed = false,
+                EmailConfirmed = true,
                 FirstName = command.FirstName,
                 LastName = command.LastName,
                 DatabaseUsername = tenant.DatabaseUsername

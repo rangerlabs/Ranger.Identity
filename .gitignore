@@ -76,3 +76,4 @@ NuGet.config
 project.assets.json
 
 *.Production.*
+node_modules

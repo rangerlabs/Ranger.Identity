@@ -1,93 +1,78 @@
 ﻿@model LoginViewModel
 
-<div class="login-page">
-    <div class="page-header">
-        <h1>Login</h1>
-    </div>
-
-    <partial name="_ValidationSummary" />
-
-    <div class="row">
-
-        @if (Model.EnableLocalLogin)
-        {
-            <div class="col-sm-6">
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <h3 class="panel-title">Local Login</h3>
-                    </div>
-                    <div class="panel-body">
-
-                        <form asp-route="Login">
-                            <input type="hidden" asp-for="ReturnUrl" />
-
-                            <fieldset>
-                                <div class="form-group">
-                                    <label asp-for="Username"></label>
-                                    <input class="form-control" placeholder="Username" asp-for="Username" autofocus>
-                                </div>
-                                <div class="form-group">
-                                    <label asp-for="Password"></label>
-                                    <input type="password" class="form-control" placeholder="Password" asp-for="Password" autocomplete="off">
-                                </div>
-                                @if (Model.AllowRememberLogin)
-                                {
-                                    <div class="form-group login-remember">
-                                        <label asp-for="RememberLogin">
-                                            <input asp-for="RememberLogin">
-                                            <strong>Remember My Login</strong>
-                                        </label>
+<div class="mdc-layout-grid">
+   <div class="app-bar-push"></div>
+   <div class="app-bar-push"></div>
+   <div class="mdc-layout-grid__inner"> 
+        <div class="mdc-layout-grid__cell--align-middle mdc-layout-grid__cell--span-4-desktop mdc-layout-grid__cell--span-1-tablet mdc-layout-grid__cell--span-0-phone"></div>
+        <div class="mdc-layout-grid__cell--align-middle mdc-layout-grid__cell--span-4-desktop mdc-layout-grid__cell--span-6-tablet mdc-layout-grid__cell--span-4-phone">
+            @if (Model.EnableLocalLogin)
+            {
+                <h5 class="mdc-typography--headline5 text-align-center">Login</h5>
+                <form asp-route="Login">
+                    <input type="hidden" asp-for="ReturnUrl" />
+                        <div class="mdc-text-field mdc-text-field--fullwidth" data-mdc-auto-init="MDCTextField">
+                            <!-- <label for="text-field-hero-input" class="mdc-floating-label">Username</label> -->
+                            <input placeholder="Username" class="mdc-text-field__input" asp-for="Username" autofocus>
+                            <div class="mdc-line-ripple"></div>
+                        </div>
+                        <div class="mdc-text-field mdc-text-field--fullwidth" data-mdc-auto-init="MDCTextField">
+                            <!-- <label for="text-field-hero-input" class="mdc-floating-label">Password</label> -->
+                            <input placeholder="Password" class="mdc-text-field__input" type="password" autocomplete="off" asp-for="Password">
+                            <div class="mdc-line-ripple"></div>
+                        </div>
+                    <div class="mdc-layout-grid__inner"> 
+                        @if (Model.AllowRememberLogin)
+                        {
+                            <div class="mdc-layout-grid__cell--align-middle 
+                                        mdc-layout-grid__cell--span-6-desktop 
+                                        mdc-layout-grid__cell--span-4-tablet 
+                                        mdc-layout-grid__cell--span-2-phone">
+                                <div class="mdc-form-field">
+                                    <div class="mdc-checkbox">
+                                        <input type="checkbox" class="mdc-checkbox__native-control" id="RememberLogin"/>
+                                        <div class="mdc-checkbox__background mdc-theme--primary">
+                                            <svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+                                                <path class="mdc-checkbox__checkmark-path" fill="none" d="M1.73,12.91 8.1,19.28 22.79,4.59"/>
+                                            </svg>
+                                            <div class="mdc-checkbox__mixedmark"></div>
+                                        </div>
                                     </div>
-                                }
-
-                                <div>
-                                    <p>The default users are alice/bob, password: Pass123$</p>
+                                    <label asp-for="RememberLogin">Remember Me</label>
                                 </div>
-
-                                <div class="form-group">
-                                    <button class="btn btn-primary" name="button" value="login">Login</button>
-                                    <button class="btn btn-default" name="button" value="cancel">Cancel</button>
-                                </div>
-                            </fieldset>
-                        </form>
+                            </div>
+                        }
+                        <div class="mdc-layout-grid__cell
+                                    mdc-layout-grid--align-right 
+                                    mdc-layout-grid__cell--align-middle 
+                                    mdc-layout-grid__cell--span-6-desktop 
+                                    mdc-layout-grid__cell--span-4-tablet 
+                                    mdc-layout-grid__cell--span-2-phone">
+                            <div class="mdc-form-field">
+                                <button class="mdc-button mdc-button--text" name="button" value="cancel">
+                                    <span class="mdc-button__ripple"></span> 
+                                    Cancel
+                                </button>
+                            </div>
+                            <div class="mdc-form-field">
+                                <button class="mdc-button mdc-button--raised" name="button" value="login">
+                                    <span class="mdc-button__ripple"></span> 
+                                    Login
+                                </button>
+                            </div>
+                        </div> 
                     </div>
-                </div>
-            </div>
-        }
-
-        @if (Model.VisibleExternalProviders.Any())
-        {
-            <div class="col-md-6 col-sm-6 external-providers">
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <h3 class="panel-title">External Login</h3>
-                    </div>
-                    <div class="panel-body">
-                        <ul class="list-inline">
-                            @foreach (var provider in Model.VisibleExternalProviders)
-                            {
-                                <li>
-                                    <a class="btn btn-default"
-                                       asp-controller="External"
-                                       asp-action="Challenge"
-                                       asp-route-provider="@provider.AuthenticationScheme"
-                                       asp-route-returnUrl="@Model.ReturnUrl">
-                                        @provider.DisplayName
-                                    </a>
-                                </li>
-                            }
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        }
-
-        @if (!Model.EnableLocalLogin && !Model.VisibleExternalProviders.Any())
-        {
-            <div class="alert alert-warning">
-                <strong>Invalid login request</strong>
-                There are no login schemes configured for this client.
-            </div>
-        }
+                </form>
+            }
+            <partial name="_ValidationSummary" />
+        </div>
     </div>
+
+    @if (!Model.EnableLocalLogin && !Model.VisibleExternalProviders.Any())
+    {
+        <div class="alert alert-warning">
+            <strong>Invalid login request</strong>
+            There are no login schemes configured for this client.
+        </div>
+    }
 </div>
