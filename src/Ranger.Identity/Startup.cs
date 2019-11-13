@@ -23,6 +23,7 @@ using IdentityServer4.Services;
 using System.Linq;
 using IdentityServer4.EntityFramework.Mappers;
 using Microsoft.AspNetCore.HttpOverrides;
+using Newtonsoft.Json.Serialization;
 
 namespace Ranger.Identity
 {
@@ -44,6 +45,12 @@ namespace Ranger.Identity
             services.AddControllersWithViews(options =>
             {
                 options.EnableEndpointRouting = false;
+
+            }).AddNewtonsoftJson(options =>
+            {
+                options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+                options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+
             });
 
             services.AddSingleton<ITenantsClient, TenantsClient>(provider =>
@@ -62,9 +69,7 @@ namespace Ranger.Identity
                     var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
                     npgsqlOptions.MigrationsAssembly(migrationsAssembly);
                 });
-            },
-                ServiceLifetime.Transient
-            );
+            });
             services.AddEntityFrameworkNpgsql().AddDbContext<PersistedGrantDbContext>((serviceProvider, options) =>
             {
                 options.UseNpgsql(configuration["cloudSql:ConnectionString"], npgsqlOptions =>
@@ -72,9 +77,7 @@ namespace Ranger.Identity
                     var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
                     npgsqlOptions.MigrationsAssembly(migrationsAssembly);
                 });
-            },
-                ServiceLifetime.Transient
-            );
+            });
             services.AddHttpContextAccessor();
 
             services.AddTransient<IIdentityDbContextInitializer, IdentityDbContextInitializer>();
@@ -123,15 +126,8 @@ namespace Ranger.Identity
                     options.TokenCleanupInterval = 60;
                 });
 
-            if (Environment.IsDevelopment())
-            {
-                identityServerBuilder.AddDeveloperSigningCredential();
-            }
-            else
-            {
-                identityServerBuilder.AddSigningCredential(new X509Certificate2(configuration["IdentitySigningCertPath:Path"]));
-                identityServerBuilder.AddValidationKey(new X509Certificate2(configuration["IdentityValidationCertPath:Path"]));
-            }
+            identityServerBuilder.AddSigningCredential(new X509Certificate2(configuration["IdentitySigningCertPath:Path"]));
+            identityServerBuilder.AddValidationKey(new X509Certificate2(configuration["IdentityValidationCertPath:Path"]));
 
             services.AddLocalApiAuthentication();
             services.AddSingleton<ICorsPolicyService, CorsPolicyService>();
@@ -148,7 +144,6 @@ namespace Ranger.Identity
             builder.RegisterType<RangerIdentityDbContext>().InstancePerDependency();
             builder.RegisterType<RangerUserManager>().As(typeof(UserManager<RangerUser>));
             builder.RegisterType<RangerUserStore>().As(typeof(IUserStore<RangerUser>));
-            // builder.RegisterAssemblyTypes(this.GetType().Assembly).AsClosedTypesOf(typeof(BaseRepository<>)).InstancePerDependency();
             builder.AddRabbitMq(this.loggerFactory);
         }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using IdentityServer4;
@@ -111,11 +112,12 @@ namespace Ranger.Identity
             {
                 return NoContent();
             }
-            var userResponse = users.Select(async (u) =>
+            var userResponse = new List<ApplicationUserResponseModel>();
+            foreach (var user in users)
             {
-                var role = await userManager.GetRolesAsync(u);
-                MapUserToUserResponse(u, role.First());
-            });
+                var role = await userManager.GetRolesAsync(user);
+                userResponse.Add(MapUserToUserResponse(user, role.First()));
+            }
             return Ok(userResponse);
         }
 
@@ -127,7 +129,8 @@ namespace Ranger.Identity
                 Email = user.Email,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                Role = role
+                EmailConfirmed = user.EmailConfirmed,
+                Role = role,
             };
         }
 
