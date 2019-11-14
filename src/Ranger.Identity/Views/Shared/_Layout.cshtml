@@ -13,9 +13,17 @@
     <header class="mdc-top-app-bar mdc-top-app-bar--fixed">
         <div class="mdc-top-app-bar__row">
             <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-start">
-                <a href="https://rangerlabs.io">
-                    <h5 class="mdc-typography--headline5 text-align-center">RANGER</h5>
-                </a>
+                <environment names="Production">
+                    <a href="https://rangerlabs.io">
+                        <h5 class="mdc-typography--headline5 text-align-center">RANGER</h5>
+                    </a>
+                </environment>
+                <environment names="Development">
+                    <a href="https://localhost.io:8080">
+                        <h5 class="mdc-typography--headline5 text-align-center">RANGER</h5>
+                    </a>
+                </environment>
+
             </section>
         </div>
     </header>

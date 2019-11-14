@@ -2,13 +2,12 @@
 
 <div class="mdc-layout-grid">
    <div class="app-bar-push"></div>
-   <div class="app-bar-push"></div>
    <div class="mdc-layout-grid__inner"> 
         <div class="mdc-layout-grid__cell--align-middle mdc-layout-grid__cell--span-4-desktop mdc-layout-grid__cell--span-1-tablet mdc-layout-grid__cell--span-0-phone"></div>
         <div class="mdc-layout-grid__cell--align-middle mdc-layout-grid__cell--span-4-desktop mdc-layout-grid__cell--span-6-tablet mdc-layout-grid__cell--span-4-phone">
             @if (Model.EnableLocalLogin)
             {
-                <h5 class="mdc-typography--headline5 text-align-center">Login</h5>
+                <h5 class="ranger-gutters mdc-typography--headline5 text-align-center">Login</h5>
                 <form asp-route="Login">
                     <input type="hidden" asp-for="ReturnUrl" />
                         <div class="mdc-text-field mdc-text-field--fullwidth" data-mdc-auto-init="MDCTextField">
@@ -48,7 +47,8 @@
                                     mdc-layout-grid__cell--align-middle 
                                     mdc-layout-grid__cell--span-12-desktop 
                                     mdc-layout-grid__cell--span-8-tablet 
-                                    mdc-layout-grid__cell--span-4-phone">
+                                    mdc-layout-grid__cell--span-4-phone
+                                    bottom-form-controls">
                             <div class="mdc-form-field">
                                 <button class="mdc-button mdc-button--raised" name="button" value="login">
                                     <span class="mdc-button__ripple"></span> 
