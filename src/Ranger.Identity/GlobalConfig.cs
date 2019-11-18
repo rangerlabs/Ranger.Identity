@@ -21,7 +21,7 @@ namespace Ranger.Identity
             }
         }
 
-        public static string PostLogoutRedirectUri
+        public static string RedirectHost
         {
             get
             {

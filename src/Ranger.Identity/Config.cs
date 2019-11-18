@@ -104,7 +104,7 @@ namespace Ranger.Identity
                 RequirePkce = true,
                 RequireClientSecret = false,
                 RedirectUris = { String.Empty },
-                PostLogoutRedirectUris = { $"https://{GlobalConfig.PostLogoutRedirectUri}" },
+                PostLogoutRedirectUris = { $"https://{GlobalConfig.RedirectHost}" },
                 // AllowAccessTokensViaBrowser = true,
                 // AllowOfflineAccess = true,
 

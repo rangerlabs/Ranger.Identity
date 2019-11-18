@@ -6,7 +6,5 @@ namespace Ranger.Identity
     {
         [Required]
         public string RegistrationKey { get; set; }
-        [Required]
-        public string UserId { get; set; }
     }
 }

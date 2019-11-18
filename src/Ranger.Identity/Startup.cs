@@ -144,6 +144,7 @@ namespace Ranger.Identity
             builder.RegisterType<RangerIdentityDbContext>().InstancePerDependency();
             builder.RegisterType<RangerUserManager>().As(typeof(UserManager<RangerUser>));
             builder.RegisterType<RangerUserStore>().As(typeof(IUserStore<RangerUser>));
+            builder.RegisterType<RangerSignInManager>().As(typeof(SignInManager<RangerUser>));
             builder.AddRabbitMq(this.loggerFactory);
         }
 

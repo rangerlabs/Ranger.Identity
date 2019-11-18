@@ -13,34 +13,41 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Ranger.Identity.Data;
+using Ranger.Identity;
+using Ranger.InternalHttpClient;
+using Ranger.Common;
 
 namespace IdentityServer4.Quickstart.UI
 {
     [SecurityHeaders]
     [AllowAnonymous]
+    [TenantSubdomainRequired]
     public class AccountController : Controller
     {
-        private readonly UserManager<RangerUser> _userManager;
-        private readonly SignInManager<RangerUser> _signInManager;
+        private readonly RangerUserManager.Factory _userManagerFactory;
+        private readonly RangerSignInManager.Factory _signInManagerFactory;
         private readonly IIdentityServerInteractionService _interaction;
         private readonly IClientStore _clientStore;
         private readonly IAuthenticationSchemeProvider _schemeProvider;
         private readonly IEventService _events;
+        private readonly ITenantsClient _tenantsClient;
 
         public AccountController(
-            UserManager<RangerUser> userManager,
-            SignInManager<RangerUser> signInManager,
+            RangerUserManager.Factory userManagerFactory,
+            RangerSignInManager.Factory signInManagerFactory,
             IIdentityServerInteractionService interaction,
             IClientStore clientStore,
             IAuthenticationSchemeProvider schemeProvider,
-            IEventService events)
+            IEventService events,
+            ITenantsClient tenantsClient)
         {
-            _userManager = userManager;
-            _signInManager = signInManager;
+            _userManagerFactory = userManagerFactory;
+            _signInManagerFactory = signInManagerFactory;
             _interaction = interaction;
             _clientStore = clientStore;
             _schemeProvider = schemeProvider;
             _events = events;
+            _tenantsClient = tenantsClient;
         }
 
         /// <summary>
@@ -100,46 +107,69 @@ namespace IdentityServer4.Quickstart.UI
 
             if (ModelState.IsValid)
             {
-                var result = await _signInManager.PasswordSignInAsync(model.Username, model.Password, model.RememberLogin, lockoutOnFailure: true);
-                if (result.Succeeded)
+                ContextTenant tenant = null;
+                try
                 {
-                    var user = await _userManager.FindByNameAsync(model.Username);
-                    if (user.EmailConfirmed)
-                    {
-                        await _events.RaiseAsync(new UserLoginSuccessEvent(user.UserName, user.Id, user.UserName, clientId: context?.ClientId));
-
-                        if (context != null)
-                        {
-                            if (await _clientStore.IsPkceClientAsync(context.ClientId))
-                            {
-                                // if the client is PKCE then we assume it's native, so this change in how to
-                                // return the response is for better UX for the end user.
-                                return View("Redirect", new RedirectViewModel { RedirectUrl = model.ReturnUrl });
-                            }
-
-                            // we can trust model.ReturnUrl since GetAuthorizationContextAsync returned non-null
-                            return Redirect(model.ReturnUrl);
-                        }
-
-                        // request for a local page
-                        if (Url.IsLocalUrl(model.ReturnUrl))
-                        {
-                            return Redirect(model.ReturnUrl);
-                        }
-                        else if (string.IsNullOrEmpty(model.ReturnUrl))
-                        {
-                            return Redirect("~/");
-                        }
-                        else
-                        {
-                            // user might have clicked on a malicious link - should be logged
-                            throw new Exception("invalid return URL");
-                        }
-                    }
+                    var (_, domain) = GetDomainFromRequestHost();
+                    tenant = await _tenantsClient.GetTenantAsync<ContextTenant>(domain);
+                }
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError(string.Empty, "An error occurred logging the user in.");
                 }
 
-                await _events.RaiseAsync(new UserLoginFailureEvent(model.Username, "invalid credentials", clientId: context?.ClientId));
-                ModelState.AddModelError(string.Empty, AccountOptions.InvalidCredentialsErrorMessage);
+                if (tenant != null)
+                {
+                    var signInManager = _signInManagerFactory.Invoke(tenant);
+                    var result = await signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberLogin, lockoutOnFailure: true);
+                    if (result.Succeeded)
+                    {
+                        var userManager = _userManagerFactory.Invoke(tenant);
+                        var user = await userManager.FindByEmailAsync(model.Email);
+                        if (user.EmailConfirmed)
+                        {
+                            await _events.RaiseAsync(new UserLoginSuccessEvent(user.UserName, user.Id, user.UserName, clientId: context?.ClientId));
+
+                            if (context != null)
+                            {
+                                if (await _clientStore.IsPkceClientAsync(context.ClientId))
+                                {
+                                    // if the client is PKCE then we assume it's native, so this change in how to
+                                    // return the response is for better UX for the end user.
+                                    return View("Redirect", new RedirectViewModel { RedirectUrl = model.ReturnUrl });
+                                }
+
+                                // we can trust model.ReturnUrl since GetAuthorizationContextAsync returned non-null
+                                return Redirect(model.ReturnUrl);
+                            }
+
+                            // request for a local page
+                            if (Url.IsLocalUrl(model.ReturnUrl))
+                            {
+                                return Redirect(model.ReturnUrl);
+                            }
+                            else if (string.IsNullOrEmpty(model.ReturnUrl))
+                            {
+                                return Redirect("~/");
+                            }
+                            else
+                            {
+                                // user might have clicked on a malicious link - should be logged
+                                throw new Exception("invalid return URL");
+                            }
+                        }
+                        await _events.RaiseAsync(new UserLoginFailureEvent(model.Email, "invalid credentials", clientId: context?.ClientId));
+                        ModelState.AddModelError(string.Empty, AccountOptions.InvalidCredentialsErrorMessage);
+                    }
+                    else if (result.IsLockedOut)
+                    {
+                        ModelState.AddModelError(string.Empty, AccountOptions.LockoutErrorMessage);
+                    }
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, "An server error occurred logging the user in.");
+                }
             }
 
             // something went wrong, show form with error
@@ -179,11 +209,26 @@ namespace IdentityServer4.Quickstart.UI
 
             if (User?.Identity.IsAuthenticated == true)
             {
-                // delete local authentication cookie
-                await _signInManager.SignOutAsync();
+                ContextTenant tenant = null;
+                try
+                {
+                    var (_, domain) = GetDomainFromRequestHost();
+                    tenant = await _tenantsClient.GetTenantAsync<ContextTenant>(domain);
+                }
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError(string.Empty, "An error occurred logging the user in.");
+                }
 
-                // raise the logout event
-                await _events.RaiseAsync(new UserLogoutSuccessEvent(User.GetSubjectId(), User.GetDisplayName()));
+                if (tenant != null)
+                {
+                    var signInManager = _signInManagerFactory.Invoke(tenant);
+
+                    // delete local authentication cookie
+                    await signInManager.SignOutAsync();
+                    // raise the logout event
+                    await _events.RaiseAsync(new UserLogoutSuccessEvent(User.GetSubjectId(), User.GetDisplayName()));
+                }
             }
 
             // check if we need to trigger sign-out at an upstream identity provider
@@ -223,7 +268,7 @@ namespace IdentityServer4.Quickstart.UI
                 {
                     EnableLocalLogin = local,
                     ReturnUrl = returnUrl,
-                    Username = context?.LoginHint,
+                    Email = context?.LoginHint,
                 };
 
                 if (!local)
@@ -266,7 +311,7 @@ namespace IdentityServer4.Quickstart.UI
                 AllowRememberLogin = AccountOptions.AllowRememberLogin,
                 EnableLocalLogin = allowLocal && AccountOptions.AllowLocalLogin,
                 ReturnUrl = returnUrl,
-                Username = context?.LoginHint,
+                Email = context?.LoginHint,
                 ExternalProviders = providers.ToArray()
             };
         }
@@ -274,7 +319,7 @@ namespace IdentityServer4.Quickstart.UI
         private async Task<LoginViewModel> BuildLoginViewModelAsync(LoginInputModel model)
         {
             var vm = await BuildLoginViewModelAsync(model.ReturnUrl);
-            vm.Username = model.Username;
+            vm.Email = model.Email;
             vm.RememberLogin = model.RememberLogin;
             return vm;
         }
@@ -339,6 +384,12 @@ namespace IdentityServer4.Quickstart.UI
             }
 
             return vm;
+        }
+
+        private (int length, string domain) GetDomainFromRequestHost()
+        {
+            var hostComponents = HttpContext.Request.Host.Host.Split('.');
+            return (hostComponents.Length, hostComponents[0]);
         }
     }
 }
