@@ -5,7 +5,7 @@ using Ranger.Common;
 
 namespace Ranger.Identity.Data
 {
-    public class RangerUser : IdentityUser<string>, IRowLevelSecurityDbSet
+    public class RangerUser : IdentityUser<string>
     {
         [Required]
         public string FirstName { get; set; }
@@ -14,7 +14,11 @@ namespace Ranger.Identity.Data
         public string LastName { get; set; }
 
         [Required]
-        public string DatabaseUsername { get; set; }
+        public string database_username { get; set; }
+
+        [EmailAddress]
+        [StringLength(256)]
+        public string UnconfirmedEmail { get; set; }
 
         public List<string> AuthorizedProjects { get; set; }
     }

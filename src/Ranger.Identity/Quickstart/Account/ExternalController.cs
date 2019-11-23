@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Ranger.Identity;
 using Ranger.Identity.Data;
 
 namespace IdentityServer4.Quickstart.UI
@@ -22,7 +23,7 @@ namespace IdentityServer4.Quickstart.UI
     [AllowAnonymous]
     public class ExternalController : Controller
     {
-        private readonly UserManager<RangerUser> _userManager;
+        private readonly RangerUserManager _userManager;
         private readonly SignInManager<RangerUser> _signInManager;
         private readonly IIdentityServerInteractionService _interaction;
         private readonly IClientStore _clientStore;
@@ -30,7 +31,7 @@ namespace IdentityServer4.Quickstart.UI
         private readonly ILogger<ExternalController> _logger;
 
         public ExternalController(
-            UserManager<RangerUser> userManager,
+            RangerUserManager userManager,
             SignInManager<RangerUser> signInManager,
             IIdentityServerInteractionService interaction,
             IClientStore clientStore,

@@ -2,9 +2,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Ranger.Identity
 {
-    public class UserConfirmModel
+    public class PasswordResetModel
     {
         [Required]
-        public string Token { get; set; }
+        public string Password { get; set; }
     }
 }

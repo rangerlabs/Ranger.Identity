@@ -24,6 +24,12 @@ using System.Linq;
 using IdentityServer4.EntityFramework.Mappers;
 using Microsoft.AspNetCore.HttpOverrides;
 using Newtonsoft.Json.Serialization;
+using Microsoft.Extensions.Options;
+using System;
+using System.Collections.Generic;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace Ranger.Identity
 {
@@ -80,13 +86,20 @@ namespace Ranger.Identity
             });
             services.AddHttpContextAccessor();
 
-            services.AddTransient<IIdentityDbContextInitializer, IdentityDbContextInitializer>();
+            services.AddTransient<IIdentityDbContextInitializer, RangerIdentityDbContextInitializer>();
             services.AddTransient<IConfigurationDbContextInitializer, ConfigurationDbContextInitializer>();
             services.AddTransient<IPersistedGrantDbContextInitializer, PersistedGrantDbContextInitializer>();
             services.AddTransient<ILoginRoleRepository<RangerIdentityDbContext>, LoginRoleRepository<RangerIdentityDbContext>>();
 
 
-            services.AddIdentity<RangerUser, IdentityRole>()
+            services.AddIdentity<RangerUser, IdentityRole>(options =>
+            {
+                options.Password.RequiredLength = 8;
+                options.Password.RequireDigit = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireNonAlphanumeric = true;
+            })
                 .AddEntityFrameworkStores<RangerIdentityDbContext>()
                 .AddDefaultTokenProviders();
 
@@ -140,10 +153,27 @@ namespace Ranger.Identity
         public void ConfigureContainer(ContainerBuilder builder)
         {
             builder.RegisterType<RangerIdentityDbContext>().AsSelf().InstancePerRequest();
+            builder.RegisterType<TenantServiceRangerIdentityDbContext>();
             builder.RegisterInstance<CloudSqlOptions>(configuration.GetOptions<CloudSqlOptions>("cloudSql"));
             builder.RegisterType<RangerIdentityDbContext>().InstancePerDependency();
-            builder.RegisterType<RangerUserManager>().As(typeof(UserManager<RangerUser>));
-            builder.RegisterType<RangerUserStore>().As(typeof(IUserStore<RangerUser>));
+            builder.Register((c, p) =>
+            {
+                var options = c.Resolve<IOptions<IdentityOptions>>();
+                var passwordHasher = c.Resolve<IPasswordHasher<RangerUser>>();
+                var userValidators = c.Resolve<IEnumerable<IUserValidator<RangerUser>>>();
+                var passwordValidators = c.Resolve<IEnumerable<IPasswordValidator<RangerUser>>>();
+                var keyNormalizer = c.Resolve<ILookupNormalizer>();
+                var errors = c.Resolve<IdentityErrorDescriber>();
+                var services = c.Resolve<IServiceProvider>();
+                var logger = c.Resolve<ILogger<UserManager<RangerUser>>>();
+
+
+                var provider = c.Resolve<TenantServiceRangerIdentityDbContext>();
+                var (dbContextOptions, model) = provider.GetDbContextOptions(p.TypedAs<string>());
+                var userStore = new UserStore<RangerUser>(new RangerIdentityDbContext(dbContextOptions));
+
+                return new RangerUserManager(model, userStore, options, passwordHasher, userValidators, passwordValidators, keyNormalizer, errors, services, logger);
+            });
             builder.RegisterType<RangerSignInManager>().As(typeof(SignInManager<RangerUser>));
             builder.AddRabbitMq(this.loggerFactory);
         }

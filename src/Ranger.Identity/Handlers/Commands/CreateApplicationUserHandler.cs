@@ -16,14 +16,14 @@ namespace Ranger.Identity
     {
         private readonly IBusPublisher busPublisher;
         private readonly ILogger<CreateApplicationUserHandler> logger;
-        private readonly UserManager<RangerUser> userManager;
+        private readonly Func<string, RangerUserManager> userManager;
         private readonly ITenantsClient tenantsClient;
 
         public CreateApplicationUserHandler(
             IBusPublisher busPublisher,
             ITenantsClient tenantsClient,
             ILogger<CreateApplicationUserHandler> logger,
-            UserManager<RangerUser> userManager)
+            Func<string, RangerUserManager> userManager)
         {
             this.busPublisher = busPublisher;
             this.logger = logger;
@@ -34,16 +34,8 @@ namespace Ranger.Identity
         public async Task HandleAsync(CreateApplicationUser command, ICorrelationContext context)
         {
             logger.LogInformation($"Creating user '{command.Email}' for tenant with domain '{command.Domain}'.");
-            ContextTenant tenant = null;
-            try
-            {
-                tenant = await this.tenantsClient.GetTenantAsync<ContextTenant>(command.Domain);
-            }
-            catch (Exception ex)
-            {
-                this.logger.LogError(ex, "An exception occurred retrieving the ContextTenant object. Cannot construct the tenant specific repository.");
-                throw;
-            }
+
+            var localUserManager = userManager(command.Domain);
 
             var user = new RangerUser
             {
@@ -54,21 +46,21 @@ namespace Ranger.Identity
                 FirstName = command.FirstName,
                 LastName = command.LastName,
                 AuthorizedProjects = command.PermittedProjectIds.ToList(),
-                DatabaseUsername = tenant.DatabaseUsername
+                database_username = localUserManager.TenantOrganizationNameModel.DatabaseUsername
             };
 
             try
             {
-                await userManager.CreateAsync(user);
-                await userManager.AddToRoleAsync(user, command.Role);
+                await localUserManager.CreateAsync(user);
+                await localUserManager.AddToRoleAsync(user, command.Role);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Falied to create user.");
+                logger.LogError(ex, "Failed to create user.");
                 throw new RangerException(ex.Message);
             }
 
-            var emailToken = HttpUtility.UrlEncode(await userManager.GenerateEmailConfirmationTokenAsync(user));
+            var emailToken = HttpUtility.UrlEncode(await localUserManager.GenerateEmailConfirmationTokenAsync(user));
 
             busPublisher.Publish(new NewApplicationUserCreated(command.Domain, user.Id, command.Email, user.FirstName, command.Role, emailToken, command.PermittedProjectIds), context);
         }

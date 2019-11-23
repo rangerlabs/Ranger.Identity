@@ -19,15 +19,15 @@ namespace Ranger.Identity
 {
     public class ApplicationUserProfileService : IProfileService
     {
-        private readonly RangerUserManager.Factory multitenantApplicationUserRepositoryFactory;
+        private readonly Func<string, RangerUserManager> userManager;
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly IHttpContextAccessor contextAccessor;
         private readonly ITenantsClient tenantsClient;
         private readonly ILogger logger;
 
-        public ApplicationUserProfileService(RangerUserManager.Factory multitenantApplicationUserRepositoryFactory, RoleManager<IdentityRole> roleManager, IHttpContextAccessor contextAccessor, ITenantsClient tenantsClient, ILogger<ApplicationUserProfileService> logger)
+        public ApplicationUserProfileService(Func<string, RangerUserManager> userManager, RoleManager<IdentityRole> roleManager, IHttpContextAccessor contextAccessor, ITenantsClient tenantsClient, ILogger<ApplicationUserProfileService> logger)
         {
-            this.multitenantApplicationUserRepositoryFactory = multitenantApplicationUserRepositoryFactory;
+            this.userManager = userManager;
             this.roleManager = roleManager;
             this.contextAccessor = contextAccessor;
             this.tenantsClient = tenantsClient;
@@ -44,19 +44,8 @@ namespace Ranger.Identity
                 context.RequestedClaimTypes,
                 context.Caller);
 
-            ContextTenant tenant = null;
-            try
-            {
-                tenant = await tenantsClient.GetTenantAsync<ContextTenant>(contextAccessor.HttpContext.Request.Host.GetDomainFromHost());
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "An exception occurred retrieving the ContextTenant object. Cannot construct the tenant specific repository.");
-                throw;
-            }
-
-            var userManager = multitenantApplicationUserRepositoryFactory.Invoke(tenant);
-            var user = await userManager.FindByIdAsync(context.Subject.GetSubjectId());
+            var localUserManager = userManager(contextAccessor.HttpContext.Request.Host.GetDomainFromHost());
+            var user = await localUserManager.FindByIdAsync(context.Subject.GetSubjectId());
             var claims = new List<Claim> {
                 new Claim ("email", user.Email),
                 new Claim ("firstName", user.FirstName),
@@ -64,7 +53,7 @@ namespace Ranger.Identity
                 new Claim ("authorizedProjects", JsonConvert.SerializeObject(user.AuthorizedProjects))
             };
 
-            var role = await userManager.GetRolesAsync(user);
+            var role = await localUserManager.GetRolesAsync(user);
             var userRole = ((RolesEnum)Enum.Parse(typeof(RolesEnum), role.First())).GetCascadedRoles();
             foreach (var r in userRole)
             {
@@ -77,19 +66,8 @@ namespace Ranger.Identity
         public async Task IsActiveAsync(IsActiveContext context)
         {
             var sub = context.Subject.GetSubjectId();
-            ContextTenant tenant = null;
-            try
-            {
-                tenant = await tenantsClient.GetTenantAsync<ContextTenant>(contextAccessor.HttpContext.Request.Host.GetDomainFromHost());
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "An exception occurred retrieving the ContextTenant object. Cannot construct the tenant specific repository.");
-                throw;
-            }
-
-            var userManager = multitenantApplicationUserRepositoryFactory.Invoke(tenant);
-            var user = await userManager.FindByIdAsync(context.Subject.GetSubjectId());
+            var localUserManager = userManager(contextAccessor.HttpContext.Request.Host.GetDomainFromHost());
+            var user = await localUserManager.FindByIdAsync(context.Subject.GetSubjectId());
             context.IsActive = user != null;
         }
     }

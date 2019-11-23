@@ -27,15 +27,15 @@ namespace Ranger.Identity
             var host = BuildHost(config["serverBindingUrl"], args);
             using (var scope = host.Services.CreateScope())
             {
-                var identityDbInitializer = scope.ServiceProvider.GetRequiredService<IIdentityDbContextInitializer>();
+                var rangerIdentityDbInitializer = scope.ServiceProvider.GetRequiredService<IIdentityDbContextInitializer>();
                 var configurationDbInitializer = scope.ServiceProvider.GetRequiredService<IConfigurationDbContextInitializer>();
                 var persistedGrantsDbInitializer = scope.ServiceProvider.GetRequiredService<IPersistedGrantDbContextInitializer>();
 
                 var env = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
 
-                identityDbInitializer.Migrate();
-                await identityDbInitializer.EnsureRowLevelSecurityApplied();
-                await identityDbInitializer.Seed();
+                rangerIdentityDbInitializer.Migrate();
+                await rangerIdentityDbInitializer.EnsureRowLevelSecurityApplied();
+                await rangerIdentityDbInitializer.Seed();
                 configurationDbInitializer.Migrate();
                 persistedGrantsDbInitializer.Migrate();
             }

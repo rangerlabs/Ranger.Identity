@@ -22,10 +22,10 @@ namespace IdentityServer4.Quickstart.UI
     [SecurityHeaders]
     [AllowAnonymous]
     [TenantSubdomainRequired]
-    public class AccountController : Controller
+    public class AccountController : BaseMvcController
     {
-        private readonly RangerUserManager.Factory _userManagerFactory;
-        private readonly RangerSignInManager.Factory _signInManagerFactory;
+        private readonly Func<string, RangerUserManager> userManager;
+        private readonly SignInManager<RangerUser> signInManager;
         private readonly IIdentityServerInteractionService _interaction;
         private readonly IClientStore _clientStore;
         private readonly IAuthenticationSchemeProvider _schemeProvider;
@@ -33,17 +33,17 @@ namespace IdentityServer4.Quickstart.UI
         private readonly ITenantsClient _tenantsClient;
 
         public AccountController(
-            RangerUserManager.Factory userManagerFactory,
-            RangerSignInManager.Factory signInManagerFactory,
+            Func<string, RangerUserManager> userManager,
             IIdentityServerInteractionService interaction,
+            SignInManager<RangerUser> signInManager,
             IClientStore clientStore,
             IAuthenticationSchemeProvider schemeProvider,
             IEventService events,
             ITenantsClient tenantsClient)
         {
-            _userManagerFactory = userManagerFactory;
-            _signInManagerFactory = signInManagerFactory;
+            this.userManager = userManager;
             _interaction = interaction;
+            this.signInManager = signInManager;
             _clientStore = clientStore;
             _schemeProvider = schemeProvider;
             _events = events;
@@ -113,49 +113,51 @@ namespace IdentityServer4.Quickstart.UI
                     var (_, domain) = GetDomainFromRequestHost();
                     tenant = await _tenantsClient.GetTenantAsync<ContextTenant>(domain);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     ModelState.AddModelError(string.Empty, "An error occurred logging the user in.");
                 }
 
                 if (tenant != null)
                 {
-                    var signInManager = _signInManagerFactory.Invoke(tenant);
                     var result = await signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberLogin, lockoutOnFailure: true);
                     if (result.Succeeded)
                     {
-                        var userManager = _userManagerFactory.Invoke(tenant);
-                        var user = await userManager.FindByEmailAsync(model.Email);
-                        if (user.EmailConfirmed)
+                        var localUserManager = userManager(Domain);
+                        var user = await localUserManager.FindByEmailAsync(model.Email);
+                        if (user != null)
                         {
-                            await _events.RaiseAsync(new UserLoginSuccessEvent(user.UserName, user.Id, user.UserName, clientId: context?.ClientId));
-
-                            if (context != null)
+                            if (user.EmailConfirmed)
                             {
-                                if (await _clientStore.IsPkceClientAsync(context.ClientId))
+                                await _events.RaiseAsync(new UserLoginSuccessEvent(user.UserName, user.Id, user.UserName, clientId: context?.ClientId));
+
+                                if (context != null)
                                 {
-                                    // if the client is PKCE then we assume it's native, so this change in how to
-                                    // return the response is for better UX for the end user.
-                                    return View("Redirect", new RedirectViewModel { RedirectUrl = model.ReturnUrl });
+                                    if (await _clientStore.IsPkceClientAsync(context.ClientId))
+                                    {
+                                        // if the client is PKCE then we assume it's native, so this change in how to
+                                        // return the response is for better UX for the end user.
+                                        return View("Redirect", new RedirectViewModel { RedirectUrl = model.ReturnUrl });
+                                    }
+
+                                    // we can trust model.ReturnUrl since GetAuthorizationContextAsync returned non-null
+                                    return Redirect(model.ReturnUrl);
                                 }
 
-                                // we can trust model.ReturnUrl since GetAuthorizationContextAsync returned non-null
-                                return Redirect(model.ReturnUrl);
-                            }
-
-                            // request for a local page
-                            if (Url.IsLocalUrl(model.ReturnUrl))
-                            {
-                                return Redirect(model.ReturnUrl);
-                            }
-                            else if (string.IsNullOrEmpty(model.ReturnUrl))
-                            {
-                                return Redirect("~/");
-                            }
-                            else
-                            {
-                                // user might have clicked on a malicious link - should be logged
-                                throw new Exception("invalid return URL");
+                                // request for a local page
+                                if (Url.IsLocalUrl(model.ReturnUrl))
+                                {
+                                    return Redirect(model.ReturnUrl);
+                                }
+                                else if (string.IsNullOrEmpty(model.ReturnUrl))
+                                {
+                                    return Redirect("~/");
+                                }
+                                else
+                                {
+                                    // user might have clicked on a malicious link - should be logged
+                                    throw new Exception("invalid return URL");
+                                }
                             }
                         }
                         await _events.RaiseAsync(new UserLoginFailureEvent(model.Email, "invalid credentials", clientId: context?.ClientId));
@@ -164,6 +166,11 @@ namespace IdentityServer4.Quickstart.UI
                     else if (result.IsLockedOut)
                     {
                         ModelState.AddModelError(string.Empty, AccountOptions.LockoutErrorMessage);
+                    }
+                    else
+                    {
+                        await _events.RaiseAsync(new UserLoginFailureEvent(model.Email, "invalid credentials", clientId: context?.ClientId));
+                        ModelState.AddModelError(string.Empty, AccountOptions.InvalidCredentialsErrorMessage);
                     }
                 }
                 else
@@ -215,15 +222,13 @@ namespace IdentityServer4.Quickstart.UI
                     var (_, domain) = GetDomainFromRequestHost();
                     tenant = await _tenantsClient.GetTenantAsync<ContextTenant>(domain);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    ModelState.AddModelError(string.Empty, "An error occurred logging the user in.");
+                    ModelState.AddModelError(string.Empty, "An error occurred logging the user out.");
                 }
 
                 if (tenant != null)
                 {
-                    var signInManager = _signInManagerFactory.Invoke(tenant);
-
                     // delete local authentication cookie
                     await signInManager.SignOutAsync();
                     // raise the logout event

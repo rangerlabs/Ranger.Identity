@@ -14,14 +14,14 @@ namespace Ranger.Identity
 {
     public class ApplicationUserResourceOwnerPasswordValidator : IResourceOwnerPasswordValidator
     {
-        private readonly RangerUserManager.Factory multitenantApplicationUserRepositoryFactory;
+        private readonly RangerUserManager userManager;
         private readonly IHttpContextAccessor contextAccessor;
         private readonly ITenantsClient tenantsClient;
         private readonly ILogger<ApplicationUserResourceOwnerPasswordValidator> logger;
 
-        public ApplicationUserResourceOwnerPasswordValidator(RangerUserManager.Factory multitenantApplicationUserRepositoryFactory, IHttpContextAccessor contextAccessor, ITenantsClient tenantsClient, ILogger<ApplicationUserResourceOwnerPasswordValidator> logger)
+        public ApplicationUserResourceOwnerPasswordValidator(RangerUserManager userManager, IHttpContextAccessor contextAccessor, ITenantsClient tenantsClient, ILogger<ApplicationUserResourceOwnerPasswordValidator> logger)
         {
-            this.multitenantApplicationUserRepositoryFactory = multitenantApplicationUserRepositoryFactory;
+            this.userManager = userManager;
             this.contextAccessor = contextAccessor;
             this.tenantsClient = tenantsClient;
             this.logger = logger;
@@ -39,7 +39,6 @@ namespace Ranger.Identity
                 logger.LogError(ex, "An exception occurred retrieving the ContextTenant object. Cannot construct the tenant specific repository.");
                 throw;
             }
-            var userManager = multitenantApplicationUserRepositoryFactory.Invoke(tenant);
             var user = await userManager.FindByEmailAsync(context.UserName);
             if (await userManager.CheckPasswordAsync(user, context.Password))
             {

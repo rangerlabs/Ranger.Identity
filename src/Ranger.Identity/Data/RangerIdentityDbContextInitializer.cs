@@ -10,12 +10,12 @@ using Ranger.Common;
 
 namespace Ranger.Identity.Data
 {
-    public class IdentityDbContextInitializer : IIdentityDbContextInitializer
+    public class RangerIdentityDbContextInitializer : IIdentityDbContextInitializer
     {
         private readonly RangerIdentityDbContext context;
         private readonly RoleManager<IdentityRole> roleManager;
 
-        public IdentityDbContextInitializer(RangerIdentityDbContext context)
+        public RangerIdentityDbContextInitializer(RangerIdentityDbContext context)
         {
             this.context = context;
             roleManager = new RoleManager<IdentityRole>(new RoleStore<IdentityRole>(context), null, new UpperInvariantLookupNormalizer(), null, null);

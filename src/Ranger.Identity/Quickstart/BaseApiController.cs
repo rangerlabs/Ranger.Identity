@@ -1,6 +1,9 @@
+using System;
 using System.Linq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Primitives;
+using Ranger.RabbitMQ;
 
 namespace Ranger.Identity
 {

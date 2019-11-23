@@ -11,7 +11,7 @@ using Ranger.Identity.Data;
 namespace Ranger.Identity.Migrations
 {
     [DbContext(typeof(RangerIdentityDbContext))]
-    [Migration("20191110020642_Initial")]
+    [Migration("20191123074844_Initial")]
     partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -19,7 +19,7 @@ namespace Ranger.Identity.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn)
-                .HasAnnotation("ProductVersion", "3.0.0")
+                .HasAnnotation("ProductVersion", "3.0.1")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
@@ -185,10 +185,6 @@ namespace Ranger.Identity.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("text");
 
-                    b.Property<string>("DatabaseUsername")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("Email")
                         .HasColumnType("character varying(256)")
                         .HasMaxLength(256);
@@ -233,16 +229,25 @@ namespace Ranger.Identity.Migrations
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("UnconfirmedEmail")
+                        .HasColumnType("character varying(256)")
+                        .HasMaxLength(256);
+
                     b.Property<string>("UserName")
                         .HasColumnType("character varying(256)")
                         .HasMaxLength(256);
 
+                    b.Property<string>("database_username")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("NormalizedEmail")
+                    b.HasIndex("database_username", "NormalizedEmail")
+                        .IsUnique()
                         .HasName("EmailIndex");
 
-                    b.HasIndex("DatabaseUsername", "NormalizedUserName")
+                    b.HasIndex("database_username", "NormalizedUserName")
                         .IsUnique()
                         .HasName("UserNameIndex");
 

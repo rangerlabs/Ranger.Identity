@@ -44,7 +44,8 @@ namespace Ranger.Identity.Migrations
                     AccessFailedCount = table.Column<int>(nullable: false),
                     FirstName = table.Column<string>(nullable: false),
                     LastName = table.Column<string>(nullable: false),
-                    DatabaseUsername = table.Column<string>(nullable: false),
+                    database_username = table.Column<string>(nullable: false),
+                    UnconfirmedEmail = table.Column<string>(maxLength: 256, nullable: true),
                     AuthorizedProjects = table.Column<List<string>>(nullable: true)
                 },
                 constraints: table =>
@@ -201,12 +202,13 @@ namespace Ranger.Identity.Migrations
             migrationBuilder.CreateIndex(
                 name: "EmailIndex",
                 table: "AspNetUsers",
-                column: "NormalizedEmail");
+                columns: new[] { "database_username", "NormalizedEmail" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "UserNameIndex",
                 table: "AspNetUsers",
-                columns: new[] { "DatabaseUsername", "NormalizedUserName" },
+                columns: new[] { "database_username", "NormalizedUserName" },
                 unique: true);
         }
 

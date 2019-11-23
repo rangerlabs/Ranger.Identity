@@ -1,7 +1,12 @@
+using System;
+using System.Linq;
 using System.Threading.Tasks;
 using IdentityServer4.Stores;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
+using Ranger.RabbitMQ;
 
-namespace IdentityServer4.Quickstart.UI
+namespace Ranger.Identity
 {
     public static class Extensions
     {
@@ -20,6 +25,24 @@ namespace IdentityServer4.Quickstart.UI
             }
 
             return false;
+        }
+
+        public static ICorrelationContext GetCorrelationContextFromHttpContext<T>(this HttpContext context, string email)
+        {
+            StringValues domain;
+            bool success = context.Request.Headers.TryGetValue("x-ranger-domain", out domain);
+
+            return CorrelationContext.Create<T>(
+                Guid.NewGuid(),
+                success ? domain.First() : "",
+                email,
+                Guid.Empty,
+                context.Request.Path.ToString(),
+                context.TraceIdentifier,
+                "",
+                context.Connection.Id,
+                ""
+            );
         }
     }
 }

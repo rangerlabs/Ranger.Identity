@@ -9,21 +9,16 @@ namespace Ranger.Identity.Data
 {
     public class RangerSignInManager : SignInManager<RangerUser>
     {
-        public delegate SignInManager<RangerUser> Factory(ContextTenant contextTenant);
+        public delegate SignInManager<RangerUser> Factory(UserManager<RangerUser> userStore);
 
-        public RangerSignInManager(ContextTenant contextTenant,
-                                   RangerUserManager.Factory userManagerFactory,
+        public RangerSignInManager(UserManager<RangerUser> userStore,
                                    IHttpContextAccessor contextAccessor,
                                    IUserClaimsPrincipalFactory<RangerUser> claimsFactory,
                                    IOptions<IdentityOptions> optionsAccessor,
                                    ILogger<SignInManager<RangerUser>> logger,
                                    IAuthenticationSchemeProvider schemes,
                                    IUserConfirmation<RangerUser> confirmation
-            ) : base(userManagerFactory.Invoke(contextTenant), contextAccessor, claimsFactory, optionsAccessor, logger, schemes, confirmation)
-        { }
-
-        public RangerSignInManager(UserManager<RangerUser> userManager, IHttpContextAccessor contextAccessor, IUserClaimsPrincipalFactory<RangerUser> claimsFactory, IOptions<IdentityOptions> optionsAccessor, ILogger<SignInManager<RangerUser>> logger, IAuthenticationSchemeProvider schemes, IUserConfirmation<RangerUser> confirmation)
-            : base(userManager, contextAccessor, claimsFactory, optionsAccessor, logger, schemes, confirmation)
+            ) : base(userStore, contextAccessor, claimsFactory, optionsAccessor, logger, schemes, confirmation)
         { }
     }
 }

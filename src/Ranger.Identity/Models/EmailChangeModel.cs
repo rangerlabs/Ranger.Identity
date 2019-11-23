@@ -2,9 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Ranger.Identity
 {
-    public class UserConfirmModel
+    public class EmailChangeModel
     {
         [Required]
-        public string Token { get; set; }
+        [EmailAddress]
+        public string Email { get; set; }
     }
 }

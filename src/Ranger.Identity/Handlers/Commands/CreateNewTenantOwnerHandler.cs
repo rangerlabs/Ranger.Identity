@@ -16,18 +16,18 @@ namespace Ranger.Identity
     public class CreateNewTenantOwnerHandler : ICommandHandler<CreateNewTenantOwner>
     {
         private readonly IBusPublisher busPublisher;
-        private readonly RangerUserManager.Factory multitenantApplicationUserManagerFactory;
+        private readonly Func<string, RangerUserManager> userManager;
         private readonly ITenantsClient tenantsClient;
         private readonly ILogger<CreateNewTenantOwnerHandler> logger;
 
         public CreateNewTenantOwnerHandler(
             IBusPublisher busPublisher,
-            RangerUserManager.Factory multitenantApplicationUserManagerFactory,
+            Func<string, RangerUserManager> userManager,
             ITenantsClient tenantsClient,
             ILogger<CreateNewTenantOwnerHandler> logger)
         {
             this.busPublisher = busPublisher;
-            this.multitenantApplicationUserManagerFactory = multitenantApplicationUserManagerFactory;
+            this.userManager = userManager;
             this.tenantsClient = tenantsClient;
             this.logger = logger;
         }
@@ -35,16 +35,8 @@ namespace Ranger.Identity
         public async Task HandleAsync(CreateNewTenantOwner command, ICorrelationContext context)
         {
             logger.LogInformation($"Creating new tenant owner '{command.Email}' for tenant with domain '{command.Domain}'.");
-            ContextTenant tenant = null;
-            try
-            {
-                tenant = await this.tenantsClient.GetTenantAsync<ContextTenant>(command.Domain);
-            }
-            catch (Exception ex)
-            {
-                this.logger.LogError(ex, "An exception occurred retrieving the ContextTenant object. Cannot construct the tenant specific repository.");
-                throw;
-            }
+
+            var localUserManager = userManager(command.Domain);
 
             var user = new RangerUser
             {
@@ -54,15 +46,12 @@ namespace Ranger.Identity
                 EmailConfirmed = true,
                 FirstName = command.FirstName,
                 LastName = command.LastName,
-                DatabaseUsername = tenant.DatabaseUsername
+                database_username = localUserManager.TenantOrganizationNameModel.DatabaseUsername
             };
-
-            var userManager = multitenantApplicationUserManagerFactory.Invoke(tenant);
-
             try
             {
-                await userManager.CreateAsync(user, command.Password);
-                await userManager.AddToRoleAsync(user, "TenantOwner");
+                await localUserManager.CreateAsync(user, command.Password);
+                await localUserManager.AddToRoleAsync(user, "TenantOwner");
             }
             catch (EventStreamDataConstraintException ex)
             {
