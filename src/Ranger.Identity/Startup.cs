@@ -52,7 +52,8 @@ namespace Ranger.Identity
             {
                 options.EnableEndpointRouting = false;
 
-            }).AddNewtonsoftJson(options =>
+            })
+            .AddNewtonsoftJson(options =>
             {
                 options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
                 options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
@@ -207,11 +208,6 @@ namespace Ranger.Identity
                    new InitializeTenantRejected(e.Message, "")
                 );
 
-
-            if (Environment.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
 
             app.UseStaticFiles();
 

@@ -81,7 +81,7 @@ namespace Ranger.Identity
             user.UnconfirmedEmail = emailChangeModel.Email;
             await localUserManager.UpdateAsync(user);
             var token = HttpUtility.UrlEncode(await localUserManager.GenerateChangeEmailTokenAsync(user, emailChangeModel.Email));
-            _busPublisher.Send(new SendChangeEmailEmail(user.FirstName, username, Domain, user.Id, localUserManager.TenantOrganizationNameModel.OrganizationName, token), HttpContext.GetCorrelationContextFromHttpContext<SendResetPasswordEmail>(username));
+            _busPublisher.Send(new SendChangeEmailEmail(user.FirstName, emailChangeModel.Email, Domain, user.Id, localUserManager.TenantOrganizationNameModel.OrganizationName, token), HttpContext.GetCorrelationContextFromHttpContext<SendResetPasswordEmail>(username));
             return NoContent();
         }
 
@@ -112,18 +112,16 @@ namespace Ranger.Identity
         [HttpPost("/user/{userId}/email-change")]
         public async Task<IActionResult> EmailChange([FromRoute] string userId, UserConfirmEmailChangeModel userConfirmEmailChangeModel)
         {
-
             var localUserManager = userManager(Domain);
-
 
             try
             {
                 var user = await localUserManager.FindByIdAsync(userId);
 
-                if ((await localUserManager.ChangeEmailAsync(user, userConfirmEmailChangeModel.Email, userConfirmEmailChangeModel.Token)).Succeeded)
+                if ((await localUserManager.ChangeEmailAsync(user, user.UnconfirmedEmail, userConfirmEmailChangeModel.Token)).Succeeded)
                 {
+                    user.UserName = user.UnconfirmedEmail;
                     user.UnconfirmedEmail = "";
-                    user.UserName = userConfirmEmailChangeModel.Email;
                     await localUserManager.UpdateAsync(user);
                     await signInManager.SignOutAsync();
                 }

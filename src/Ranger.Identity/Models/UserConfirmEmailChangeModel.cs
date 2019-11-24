@@ -7,6 +7,7 @@ namespace Ranger.Identity
         [Required]
         public string Token { get; set; }
         [Required]
+        [EmailAddress]
         public string Email { get; set; }
     }
 }
