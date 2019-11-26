@@ -8,10 +8,11 @@ namespace Ranger.Identity
     {
         public string Domain { get; }
         public string Email { get; }
+        public string CommandingUserEmail { get; }
         public string Role { get; }
         public IEnumerable<string> AuthorizedProjects { get; }
 
-        public UpdateUserPermissions(string domain, string email, string role = "", IEnumerable<string> authorizedProjects = null)
+        public UpdateUserPermissions(string domain, string email, string commandingUserEmail, string role = "", IEnumerable<string> authorizedProjects = null)
         {
             if (string.IsNullOrWhiteSpace(domain))
             {
@@ -23,7 +24,13 @@ namespace Ranger.Identity
                 throw new System.ArgumentException($"{nameof(email)} was null or whitespace.");
             }
 
+            if (string.IsNullOrWhiteSpace(commandingUserEmail))
+            {
+                throw new System.ArgumentException($"{nameof(commandingUserEmail)} was null or whitespace.");
+            }
+
             this.Email = email;
+            this.CommandingUserEmail = commandingUserEmail;
             this.Domain = domain;
             this.Role = role;
             this.AuthorizedProjects = authorizedProjects;

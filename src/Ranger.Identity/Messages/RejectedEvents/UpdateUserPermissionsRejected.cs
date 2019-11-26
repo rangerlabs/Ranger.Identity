@@ -2,10 +2,10 @@ using Ranger.RabbitMQ;
 
 namespace Ranger.Identity
 {
-    [MessageNamespaceAttribute("idenity")]
-    public class CreateApplicationUserRejected : IRejectedEvent
+    [MessageNamespaceAttribute("identity")]
+    public class UpdateUserPermissionsRejected : IRejectedEvent
     {
-        public CreateApplicationUserRejected(string reason, string code)
+        public UpdateUserPermissionsRejected(string reason, string code)
         {
             this.Reason = reason;
             this.Code = code;

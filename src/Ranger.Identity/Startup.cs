@@ -202,8 +202,8 @@ namespace Ranger.Identity
             this.busSubscriber = app.UseRabbitMQ()
                 .SubscribeCommand<CreateNewTenantOwner>((c, e) =>
                    new CreateNewTenantOwnerRejected(e.Message, ""))
-                .SubscribeCommand<CreateApplicationUser>((c, e) =>
-                   new CreateApplicationUserRejected(e.Message, ""))
+                .SubscribeCommand<CreateUser>((c, e) =>
+                   new CreateUserRejected(e.Message, ""))
                 .SubscribeCommand<InitializeTenant>((c, e) =>
                    new InitializeTenantRejected(e.Message, "")
                 );
