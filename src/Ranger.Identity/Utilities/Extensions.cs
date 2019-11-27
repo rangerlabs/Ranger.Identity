@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using IdentityServer4.Stores;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
+using Ranger.Common;
+using Ranger.Identity.Data;
 using Ranger.RabbitMQ;
 
 namespace Ranger.Identity
@@ -43,6 +45,17 @@ namespace Ranger.Identity
                 context.Connection.Id,
                 ""
             );
+        }
+
+        public static async Task<RolesEnum> GetRangerRoleAsync(this RangerUserManager rangerUserManager, RangerUser rangerUser)
+        {
+            var roles = await rangerUserManager.GetRolesAsync(rangerUser).ConfigureAwait(false);
+
+            if (roles.Count > 1)
+            {
+                throw new ArgumentOutOfRangeException($"Assignor '{rangerUser.Email}' is assigned to more than one role.");
+            }
+            return Enum.Parse<RolesEnum>(roles[0], true);
         }
     }
 }

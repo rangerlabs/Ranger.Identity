@@ -206,6 +206,9 @@ namespace Ranger.Identity
                    new CreateUserRejected(e.Message, ""))
                 .SubscribeCommand<InitializeTenant>((c, e) =>
                    new InitializeTenantRejected(e.Message, "")
+                )
+                .SubscribeCommand<UpdateUserPermissions>((c, e) =>
+                    new UpdateUserPermissionsRejected(e.Message, "")
                 );
 
 

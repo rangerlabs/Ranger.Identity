@@ -29,9 +29,9 @@ namespace Ranger.Identity
                 throw new System.ArgumentException($"{nameof(commandingUserEmail)} was null or whitespace.");
             }
 
+            this.Domain = domain;
             this.Email = email;
             this.CommandingUserEmail = commandingUserEmail;
-            this.Domain = domain;
             this.Role = role;
             this.AuthorizedProjects = authorizedProjects;
         }

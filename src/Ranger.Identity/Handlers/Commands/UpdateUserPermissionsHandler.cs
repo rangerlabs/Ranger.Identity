@@ -33,38 +33,85 @@ namespace Ranger.Identity
 
         public async Task HandleAsync(UpdateUserPermissions command, ICorrelationContext context)
         {
-            logger.LogInformation($"Creating user '{command.Email}' for tenant with domain '{command.Domain}'.");
+            logger.LogInformation($"Updating user permissions for '{command.Email}' in domain '{command.Domain}'.");
 
-            var localUserManager = userManager(command.Domain);
-
-            var user = await localUserManager.FindByEmailAsync(command.Email);
-            user.AuthorizedProjects = command.AuthorizedProjects.ToList();
-
-            IdentityResult createResult = null;
-            IdentityResult roleResult = null;
             try
             {
-                createResult = await localUserManager.CreateAsync(user);
-                roleResult = await localUserManager.AddToRoleAsync(user, command.Role);
+                var localUserManager = userManager(command.Domain);
+
+                var commandingUser = await localUserManager.FindByEmailAsync(command.CommandingUserEmail);
+                var user = await localUserManager.FindByEmailAsync(command.Email);
+
+                var canUpdateUser = await RoleAssignmentValidator.Validate(commandingUser, user, localUserManager);
+                if (!canUpdateUser)
+                {
+                    throw new RangerException("Unauthorized to make changes to the requested user.");
+                }
+
+                RolesEnum resultRoleEnum;
+                if (!Enum.TryParse<RolesEnum>(command.Role, true, out resultRoleEnum))
+                {
+                    throw new RangerException("The role was not a system role.");
+                }
+
+                IdentityResult authorizedProjectsUpdateResult = null;
+                if (resultRoleEnum == RolesEnum.User)
+                {
+                    var authorizedProjectsList = command.AuthorizedProjects.ToList();
+                    if (user.AuthorizedProjects != authorizedProjectsList)
+                    {
+                        user.AuthorizedProjects = authorizedProjectsList;
+                        authorizedProjectsUpdateResult = await localUserManager.UpdateAsync(user).ConfigureAwait(false);
+                    }
+                    if (!authorizedProjectsUpdateResult.Succeeded)
+                    {
+                        logger.LogError($"Failed to update users authorized projects. {String.Join(Environment.NewLine, authorizedProjectsUpdateResult.Errors.ToList())}");
+                    }
+                }
+
+                var userRole = await localUserManager.GetRangerRoleAsync(user);
+                IdentityResult roleAddResult = null;
+                if (userRole != resultRoleEnum)
+                {
+                    IdentityResult roleRemoveResult = null;
+                    roleAddResult = await localUserManager.AddToRoleAsync(user, command.Role);
+                    if (roleAddResult.Succeeded)
+                    {
+                        roleRemoveResult = await localUserManager.RemoveFromRoleAsync(user, Enum.GetName(typeof(RolesEnum), resultRoleEnum));
+                        if (!roleRemoveResult.Succeeded)
+                        {
+                            logger.LogError($"Failed to remove user '{command.Email}' in domain '{command.Domain}' from previous role. Attempting to rolling back the addition of the requested role. {String.Join(Environment.NewLine, roleRemoveResult.Errors.ToList())}");
+                            var result = await localUserManager.RemoveFromRoleAsync(user, command.Role);
+                            if (result.Succeeded)
+                            {
+                                logger.LogInformation($"Successfully rolled back additional role '{command.Role}' for '{command.Email}' in domain '{command.Domain}'.");
+                            }
+                            else
+                            {
+                                logger.LogError($"Failed to role back additional role '{command.Role}' for '{command.Email}' in domain '{command.Domain}'.");
+                            }
+                            throw new RangerException("Failed to update user permissions.");
+                        }
+                    }
+                    else
+                    {
+                        logger.LogError($"Failed to add role '{command.Role}' for '{command.Email}' in domain '{command.Domain}'.");
+                        throw new RangerException("Failed to update user permissions.");
+                    }
+                }
+
+                if (authorizedProjectsUpdateResult is null && roleAddResult is null)
+                {
+                    throw new RangerException("The user was not modified.");
+                }
+
+                busPublisher.Publish(new UserPermissionsUpdated(command.Domain, user.Id, command.Email, user.FirstName, command.Role, command.AuthorizedProjects), context);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to create user.");
+                logger.LogError(ex, "Failed to update user permissions.");
                 throw;
             }
-
-            if (!createResult.Succeeded)
-            {
-                if (createResult.Errors.First().Code == "DuplicateUserName")
-                {
-                    throw new RangerException("The email address is already taken.");
-                }
-                throw new RangerException("Failed to create user.");
-            }
-
-            var emailToken = HttpUtility.UrlEncode(await localUserManager.GenerateEmailConfirmationTokenAsync(user));
-
-            busPublisher.Publish(new UserCreated(command.Domain, user.Id, command.Email, user.FirstName, command.Role, emailToken, command.PermittedProjectIds), context);
         }
     }
 }
