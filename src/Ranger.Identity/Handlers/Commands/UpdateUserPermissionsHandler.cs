@@ -48,14 +48,14 @@ namespace Ranger.Identity
                     throw new RangerException("Unauthorized to make changes to the requested user.");
                 }
 
-                RolesEnum resultRoleEnum;
-                if (!Enum.TryParse<RolesEnum>(command.Role, true, out resultRoleEnum))
+                RolesEnum newRole;
+                if (!Enum.TryParse<RolesEnum>(command.Role, true, out newRole))
                 {
                     throw new RangerException("The role was not a system role.");
                 }
 
                 IdentityResult authorizedProjectsUpdateResult = null;
-                if (resultRoleEnum == RolesEnum.User)
+                if (newRole == RolesEnum.User)
                 {
                     var authorizedProjectsList = command.AuthorizedProjects.ToList();
                     if (user.AuthorizedProjects != authorizedProjectsList)
@@ -69,15 +69,15 @@ namespace Ranger.Identity
                     }
                 }
 
-                var userRole = await localUserManager.GetRangerRoleAsync(user);
+                var currentRole = await localUserManager.GetRangerRoleAsync(user);
                 IdentityResult roleAddResult = null;
-                if (userRole != resultRoleEnum)
+                if (newRole != currentRole)
                 {
                     IdentityResult roleRemoveResult = null;
                     roleAddResult = await localUserManager.AddToRoleAsync(user, command.Role);
                     if (roleAddResult.Succeeded)
                     {
-                        roleRemoveResult = await localUserManager.RemoveFromRoleAsync(user, Enum.GetName(typeof(RolesEnum), resultRoleEnum));
+                        roleRemoveResult = await localUserManager.RemoveFromRoleAsync(user, Enum.GetName(typeof(RolesEnum), currentRole));
                         if (!roleRemoveResult.Succeeded)
                         {
                             logger.LogError($"Failed to remove user '{command.Email}' in domain '{command.Domain}' from previous role. Attempting to rolling back the addition of the requested role. {String.Join(Environment.NewLine, roleRemoveResult.Errors.ToList())}");
