@@ -2,7 +2,7 @@ using Ranger.RabbitMQ;
 
 namespace Ranger.Identity
 {
-    [MessageNamespaceAttribute("idenity")]
+    [MessageNamespaceAttribute("identity")]
     public class CreateUserRejected : IRejectedEvent
     {
         public CreateUserRejected(string reason, string code)
