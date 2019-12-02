@@ -57,15 +57,18 @@ namespace Ranger.Identity
                 IdentityResult authorizedProjectsUpdateResult = null;
                 if (newRole == RolesEnum.User)
                 {
+                    var authorizedProjectsListsAreEqual = (Enumerable.SequenceEqual(user.AuthorizedProjects.OrderBy(_ => _), command.AuthorizedProjects.OrderBy(_ => _)));
                     var authorizedProjectsList = command.AuthorizedProjects.ToList();
-                    if (user.AuthorizedProjects != authorizedProjectsList)
+                    if (!authorizedProjectsListsAreEqual)
                     {
                         user.AuthorizedProjects = authorizedProjectsList;
                         authorizedProjectsUpdateResult = await localUserManager.UpdateAsync(user).ConfigureAwait(false);
-                    }
-                    if (!authorizedProjectsUpdateResult.Succeeded)
-                    {
-                        logger.LogError($"Failed to update users authorized projects. {String.Join(Environment.NewLine, authorizedProjectsUpdateResult.Errors.ToList())}");
+
+                        if (!authorizedProjectsUpdateResult.Succeeded)
+                        {
+                            logger.LogError($"Failed to update users authorized projects. {String.Join(Environment.NewLine, authorizedProjectsUpdateResult.Errors.ToList())}");
+                            throw new RangerException("An unspecified error occurred. Please try again later.");
+                        }
                     }
                 }
 
@@ -90,13 +93,13 @@ namespace Ranger.Identity
                             {
                                 logger.LogError($"Failed to role back additional role '{command.Role}' for '{command.Email}' in domain '{command.Domain}'.");
                             }
-                            throw new RangerException("Failed to update user permissions.");
+                            throw new RangerException("An unspecified error occurred. Please try again later.");
                         }
                     }
                     else
                     {
                         logger.LogError($"Failed to add role '{command.Role}' for '{command.Email}' in domain '{command.Domain}'.");
-                        throw new RangerException("Failed to update user permissions.");
+                        throw new RangerException("An unspecified error occurred. Please try again later.");
                     }
                 }
 
@@ -110,7 +113,7 @@ namespace Ranger.Identity
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to update user permissions.");
-                throw;
+                throw new RangerException("An unspecified error occurred. Please try again later.");
             }
         }
     }

@@ -1,7 +1,9 @@
 
+using System.Collections.Generic;
+
 namespace Ranger.Identity
 {
-    public class ApplicationUserResponseModel
+    public class UserResponseModel
     {
         public string Email { get; set; }
 
@@ -13,5 +15,6 @@ namespace Ranger.Identity
 
         public string Role { get; set; }
 
+        public IEnumerable<string> AuthorizedProjects { get; set; }
     }
 }

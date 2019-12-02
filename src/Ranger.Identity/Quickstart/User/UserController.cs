@@ -236,12 +236,12 @@ namespace Ranger.Identity
         {
 
             var localUserManager = userManager(Domain);
-            var users = await localUserManager.Users.ToListAsync();
+            var users = await localUserManager.Users.OrderBy(_ => _.LastName).ToListAsync();
             if (users is null)
             {
                 return NoContent();
             }
-            var userResponse = new List<ApplicationUserResponseModel>();
+            var userResponse = new List<UserResponseModel>();
             foreach (var user in users)
             {
                 var role = await localUserManager.GetRolesAsync(user);
@@ -251,15 +251,16 @@ namespace Ranger.Identity
         }
 
         [NonAction]
-        private ApplicationUserResponseModel MapUserToUserResponse(RangerUser user, string role)
+        private UserResponseModel MapUserToUserResponse(RangerUser user, string role)
         {
-            return new ApplicationUserResponseModel
+            return new UserResponseModel
             {
                 Email = user.Email,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 EmailConfirmed = user.EmailConfirmed,
                 Role = role,
+                AuthorizedProjects = user.AuthorizedProjects
             };
         }
 
