@@ -12,17 +12,17 @@ using Ranger.RabbitMQ;
 
 namespace Ranger.Identity
 {
-    public class UpdateUserPermissionsHandler : ICommandHandler<UpdateUserPermissions>
+    public class UpdateUserRoleHandler : ICommandHandler<UpdateUserRole>
     {
         private readonly IBusPublisher busPublisher;
-        private readonly ILogger<UpdateUserPermissionsHandler> logger;
+        private readonly ILogger<UpdateUserRoleHandler> logger;
         private readonly Func<string, RangerUserManager> userManager;
         private readonly ITenantsClient tenantsClient;
 
-        public UpdateUserPermissionsHandler(
+        public UpdateUserRoleHandler(
             IBusPublisher busPublisher,
             ITenantsClient tenantsClient,
-            ILogger<UpdateUserPermissionsHandler> logger,
+            ILogger<UpdateUserRoleHandler> logger,
             Func<string, RangerUserManager> userManager)
         {
             this.busPublisher = busPublisher;
@@ -31,7 +31,7 @@ namespace Ranger.Identity
             this.tenantsClient = tenantsClient;
         }
 
-        public async Task HandleAsync(UpdateUserPermissions command, ICorrelationContext context)
+        public async Task HandleAsync(UpdateUserRole command, ICorrelationContext context)
         {
             logger.LogInformation($"Updating user permissions for '{command.Email}' in domain '{command.Domain}'.");
 
@@ -52,24 +52,6 @@ namespace Ranger.Identity
                 if (!Enum.TryParse<RolesEnum>(command.Role, true, out newRole))
                 {
                     throw new RangerException("The role was not a system role.");
-                }
-
-                IdentityResult authorizedProjectsUpdateResult = null;
-                if (newRole == RolesEnum.User)
-                {
-                    var authorizedProjectsListsAreEqual = (Enumerable.SequenceEqual(user.AuthorizedProjects.OrderBy(_ => _), command.AuthorizedProjects.OrderBy(_ => _)));
-                    var authorizedProjectsList = command.AuthorizedProjects.ToList();
-                    if (!authorizedProjectsListsAreEqual)
-                    {
-                        user.AuthorizedProjects = authorizedProjectsList;
-                        authorizedProjectsUpdateResult = await localUserManager.UpdateAsync(user).ConfigureAwait(false);
-
-                        if (!authorizedProjectsUpdateResult.Succeeded)
-                        {
-                            logger.LogError($"Failed to update users authorized projects. {String.Join(Environment.NewLine, authorizedProjectsUpdateResult.Errors.ToList())}");
-                            throw new RangerException("An unspecified error occurred. Please try again later.");
-                        }
-                    }
                 }
 
                 var currentRole = await localUserManager.GetRangerRoleAsync(user);
@@ -103,12 +85,12 @@ namespace Ranger.Identity
                     }
                 }
 
-                if (authorizedProjectsUpdateResult is null && roleAddResult is null)
+                if (roleAddResult is null)
                 {
-                    throw new RangerException("The user was not modified.");
+                    logger.LogWarning("The user was not modified.");
                 }
 
-                busPublisher.Publish(new UserPermissionsUpdated(command.Domain, user.Id, command.Email, user.FirstName, command.Role, command.AuthorizedProjects), context);
+                busPublisher.Publish(new UserRoleUpdated(command.Domain, user.Id, command.Email, user.FirstName, command.Role), context);
             }
             catch (Exception ex)
             {

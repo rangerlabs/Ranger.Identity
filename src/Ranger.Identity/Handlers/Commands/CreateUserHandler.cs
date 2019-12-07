@@ -45,8 +45,7 @@ namespace Ranger.Identity
                 EmailConfirmed = false,
                 FirstName = command.FirstName,
                 LastName = command.LastName,
-                AuthorizedProjects = command.AuthorizedProjectIds.ToList(),
-                database_username = localUserManager.TenantOrganizationNameModel.DatabaseUsername
+                DatabaseUsername = localUserManager.TenantOrganizationNameModel.DatabaseUsername
             };
 
             IdentityResult createResult = null;

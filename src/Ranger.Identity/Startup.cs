@@ -35,7 +35,7 @@ namespace Ranger.Identity
 {
     public class Startup
     {
-        public IWebHostEnvironment Environment { get; }
+        private IWebHostEnvironment Environment;
         private readonly IConfiguration configuration;
         private ILoggerFactory loggerFactory;
         private IBusSubscriber busSubscriber;
@@ -63,6 +63,10 @@ namespace Ranger.Identity
             services.AddSingleton<ITenantsClient, TenantsClient>(provider =>
             {
                 return new TenantsClient("http://tenants:8082", provider.GetService<ILogger<TenantsClient>>());
+            });
+            services.AddSingleton<IProjectsClient, ProjectsClient>(provider =>
+            {
+                return new ProjectsClient("http://projects:8086", provider.GetService<ILogger<ProjectsClient>>());
             });
 
             services.AddDbContext<RangerIdentityDbContext>(options =>
@@ -207,8 +211,8 @@ namespace Ranger.Identity
                 .SubscribeCommand<InitializeTenant>((c, e) =>
                    new InitializeTenantRejected(e.Message, "")
                 )
-                .SubscribeCommand<UpdateUserPermissions>((c, e) =>
-                    new UpdateUserPermissionsRejected(e.Message, "")
+                .SubscribeCommand<UpdateUserRole>((c, e) =>
+                    new UpdateUserRoleRejected(e.Message, "")
                 );
 
 

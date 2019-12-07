@@ -46,7 +46,7 @@ namespace Ranger.Identity
                 EmailConfirmed = true,
                 FirstName = command.FirstName,
                 LastName = command.LastName,
-                database_username = localUserManager.TenantOrganizationNameModel.DatabaseUsername
+                DatabaseUsername = localUserManager.TenantOrganizationNameModel.DatabaseUsername
             };
             try
             {

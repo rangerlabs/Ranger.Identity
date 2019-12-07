@@ -51,10 +51,12 @@ namespace Ranger.Identity
             .UseServiceProviderFactory(new AutofacServiceProviderFactory())
             .ConfigureWebHostDefaults(builder =>
             {
-                builder.UseUrls(serverBindingUrl);
-                builder.UseLogging();
-                builder.UseStartup<Startup>();
-                builder.UseContentRoot(Directory.GetCurrentDirectory());
+                builder
+                .UseSetting(WebHostDefaults.DetailedErrorsKey, "true")
+                .UseUrls(serverBindingUrl)
+                .UseLogging()
+                .UseStartup<Startup>()
+                .UseContentRoot(Directory.GetCurrentDirectory());
             })
             .Build();
     }

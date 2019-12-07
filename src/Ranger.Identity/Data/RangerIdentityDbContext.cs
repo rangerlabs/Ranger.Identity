@@ -17,20 +17,46 @@ namespace Ranger.Identity.Data
 
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder builder)
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(builder);
-            // Customize the ASP.NET Identity model and override the defaults if needed.
-            // For example, you can rename the ASP.NET Identity table names and more.
-            // Add your customizations after calling base.OnModelCreating(builder);
+            base.OnModelCreating(modelBuilder);
 
+            foreach (var entity in modelBuilder.Model.GetEntityTypes())
+            {
+                // Remove 'AspNet' prefix and convert table name from PascalCase to snake_case. E.g. AspNetRoleClaims -> role_claims
+                entity.SetTableName(entity.GetTableName().Replace("AspNet", "").ToSnakeCase());
 
-            var user = builder.Entity<RangerUser>(builder =>
+                // Convert column names from PascalCase to snake_case.
+                foreach (var property in entity.GetProperties())
+                {
+                    property.SetColumnName(property.Name.ToSnakeCase());
+                }
+
+                // Convert primary key names from PascalCase to snake_case. E.g. PK_users -> pk_users
+                foreach (var key in entity.GetKeys())
+                {
+                    key.SetName(key.GetName().ToSnakeCase());
+                }
+
+                // Convert foreign key names from PascalCase to snake_case.
+                foreach (var key in entity.GetForeignKeys())
+                {
+                    key.SetConstraintName(key.GetConstraintName().ToSnakeCase());
+                }
+
+                // Convert index names from PascalCase to snake_case.
+                foreach (var index in entity.GetIndexes())
+                {
+                    index.SetName(index.GetName().ToSnakeCase());
+                }
+            }
+
+            var user = modelBuilder.Entity<RangerUser>(builder =>
             {
                 builder.Metadata.RemoveIndex(new[] { builder.Property(u => u.NormalizedUserName).Metadata });
                 builder.Metadata.RemoveIndex(new[] { builder.Property(u => u.NormalizedEmail).Metadata });
-                builder.HasIndex(u => new { u.database_username, u.NormalizedUserName }).HasName("UserNameIndex").IsUnique();
-                builder.HasIndex(u => new { u.database_username, u.NormalizedEmail }).HasName("EmailIndex").IsUnique();
+                builder.HasIndex(u => new { u.DatabaseUsername, u.NormalizedUserName }).HasName("UserNameIndex").IsUnique();
+                builder.HasIndex(u => new { u.DatabaseUsername, u.NormalizedEmail }).HasName("EmailIndex").IsUnique();
             });
         }
     }

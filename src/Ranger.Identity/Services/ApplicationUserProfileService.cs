@@ -23,14 +23,16 @@ namespace Ranger.Identity
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly IHttpContextAccessor contextAccessor;
         private readonly ITenantsClient tenantsClient;
+        private readonly IProjectsClient projectsClient;
         private readonly ILogger logger;
 
-        public ApplicationUserProfileService(Func<string, RangerUserManager> userManager, RoleManager<IdentityRole> roleManager, IHttpContextAccessor contextAccessor, ITenantsClient tenantsClient, ILogger<ApplicationUserProfileService> logger)
+        public ApplicationUserProfileService(Func<string, RangerUserManager> userManager, RoleManager<IdentityRole> roleManager, IHttpContextAccessor contextAccessor, ITenantsClient tenantsClient, IProjectsClient projectsClient, ILogger<ApplicationUserProfileService> logger)
         {
             this.userManager = userManager;
             this.roleManager = roleManager;
             this.contextAccessor = contextAccessor;
             this.tenantsClient = tenantsClient;
+            this.projectsClient = projectsClient;
             this.logger = logger;
         }
 
@@ -44,13 +46,14 @@ namespace Ranger.Identity
                 context.RequestedClaimTypes,
                 context.Caller);
 
-            var localUserManager = userManager(contextAccessor.HttpContext.Request.Host.GetDomainFromHost());
+            var domain = contextAccessor.HttpContext.Request.Host.GetDomainFromHost();
+            var localUserManager = userManager(domain);
             var user = await localUserManager.FindByIdAsync(context.Subject.GetSubjectId());
             var claims = new List<Claim> {
                 new Claim ("email", user.Email),
                 new Claim ("firstName", user.FirstName),
                 new Claim ("lastName", user.LastName),
-                new Claim ("authorizedProjects", JsonConvert.SerializeObject(user.AuthorizedProjects))
+                new Claim ("authorizedProjects", JsonConvert.SerializeObject(await projectsClient.GetProjectIdsForUser(domain, user.Email)))
             };
 
             var role = await localUserManager.GetRolesAsync(user);

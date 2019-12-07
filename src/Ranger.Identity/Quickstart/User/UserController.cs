@@ -260,8 +260,8 @@ namespace Ranger.Identity
                 LastName = user.LastName,
                 EmailConfirmed = user.EmailConfirmed,
                 Role = role,
-                AuthorizedProjects = user.AuthorizedProjects
             };
+
         }
 
     }

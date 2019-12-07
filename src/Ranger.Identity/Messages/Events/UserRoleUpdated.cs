@@ -4,16 +4,15 @@ using Ranger.RabbitMQ;
 namespace Ranger.Identity
 {
     [MessageNamespace("identity")]
-    public class UserPermissionsUpdated : IEvent
+    public class UserRoleUpdated : IEvent
     {
         public string Domain { get; }
         public string UserId { get; }
         public string Email { get; }
         public string FirstName { get; }
         public string Role { get; }
-        public IEnumerable<string> AuthorizedProjects { get; }
 
-        public UserPermissionsUpdated(string domain, string userId, string email, string firstName, string role, IEnumerable<string> authorizedProjects = null)
+        public UserRoleUpdated(string domain, string userId, string email, string firstName, string role)
         {
 
             if (string.IsNullOrWhiteSpace(domain))
@@ -46,7 +45,6 @@ namespace Ranger.Identity
             this.Email = email;
             this.FirstName = firstName;
             this.Role = role;
-            this.AuthorizedProjects = authorizedProjects;
         }
     }
 }
