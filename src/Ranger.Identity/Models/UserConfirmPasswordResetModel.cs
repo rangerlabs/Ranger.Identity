@@ -7,9 +7,8 @@ namespace Ranger.Identity
         [Required]
         public string Token { get; set; }
         [Required]
-        [StringLength(124, MinimumLength = 8)]
-        // [RegularExpression(@"[!@#$%^&*)(+=._-]{1}[a-z]{1}[A-Z]{1}[0-9]{1}")]
-        // TODO: Currently this is not working, need to investigate why - validation is currently only happening at the ApiGateway
+        [StringLength(64, MinimumLength = 8)]
+        [RegularExpression(@"^(?!.*\s)(?=.*[`~!@#\$%\^&\*\(\)_\\\+-=\{\}\[\]\|;:'"",<\.>/\?])(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,64}$")]
         public string NewPassword { get; set; }
         [Required]
         [Compare("NewPassword")]

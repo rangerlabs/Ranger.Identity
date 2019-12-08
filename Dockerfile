@@ -1,8 +1,5 @@
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build-env
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS restore
 WORKDIR /app
-
-ARG MYGET_API_KEY
-ARG BUILD_CONFIG="Release"
 
 ENV NODE_VERSION 10.15.3
 ENV NODE_DOWNLOAD_SHA 6c35b85a7cd4188ab7578354277b2b2ca43eacc864a2a16b3669753ec2369d52
@@ -11,6 +8,13 @@ RUN curl -SL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-lin
     && tar -xzf "nodejs.tar.gz" -C /usr/local --strip-components=1 \
     && rm nodejs.tar.gz \
     && ln -s /usr/local/bin/node /usr/local/bin/nodejs
+
+COPY package*.json ./
+
+RUN npm install && \
+    npm install -g --unsafe-perm node-sass
+
+ARG BUILD_CONFIG="Release"
 
 RUN mkdir -p /app/vsdbg && touch /app/vsdbg/touched
 ENV DEBIAN_FRONTEND noninteractive
@@ -22,24 +26,25 @@ RUN if [ "${BUILD_CONFIG}" = "Debug" ]; then \
     fi
 ENV DEBIAN_FRONTEND teletype
 
-COPY package*.json ./
-
-RUN npm install && \
-    npm install -g --unsafe-perm node-sass
+ARG MYGET_API_KEY
 
 COPY *.sln ./
-COPY ./src ./src
-COPY ./test ./test
+COPY ./src/Ranger.Identity/Ranger.Identity.csproj ./src/Ranger.Identity/Ranger.Identity.csproj
 COPY ./scripts ./scripts
 
-RUN npm run scss
 RUN ./scripts/create-nuget-config.sh ${MYGET_API_KEY}
-RUN dotnet publish -c ${BUILD_CONFIG} -o /app/published
+RUN dotnet restore
+
+COPY ./src ./src
+COPY ./test ./test
+
+RUN npm run scss
+RUN dotnet publish -c ${BUILD_CONFIG} -o /app/published --no-restore
 
 FROM mcr.microsoft.com/dotnet/core/aspnet:3.1
 WORKDIR /app
-COPY --from=build-env /app/published .
-COPY --from=build-env /app/vsdbg ./vsdbg
+COPY --from=restore /app/published .
+COPY --from=restore /app/vsdbg ./vsdbg
 
 ARG BUILD_CONFIG="Release"
 ARG ASPNETCORE_ENVIRONMENT="Production"

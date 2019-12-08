@@ -10,18 +10,18 @@ namespace Ranger.Identity
         public string Email { get; set; }
 
         [Required]
-        [RegularExpression(@"^[a-zA-Z,.'-]{1}[a-zA-Z ,.'-]{1,46}[a-zA-Z,.'-]{1}$")]
+        [RegularExpression(@"^([\s\,\.\-\'a-zA-Z]){1,48}$")]
         [StringLength(48, MinimumLength = 1)]
         public string FirstName { get; set; }
 
         [Required]
-        [RegularExpression(@"^[a-zA-Z,.'-]{1}[a-zA-Z ,.'-]{1,46}[a-zA-Z,.'-]{1}$")]
+        [RegularExpression(@"^([\s\,\.\-\'a-zA-Z]){1,48}$")]
         [StringLength(48, MinimumLength = 1)]
         public string LastName { get; set; }
 
         [Required]
-        [StringLength(124, MinimumLength = 8)]
-        [RegularExpression(@"[!@#$%^&*)(+=._-]{1}[a-z]{1}[A-Z]{1}[0-9]{1}")]
+        [StringLength(64, MinimumLength = 8)]
+        [RegularExpression(@"^(?!.*\s)(?=.*[`~!@#\$%\^&\*\(\)_\\\+-=\{\}\[\]\|;:'"",<\.>/\?])(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,64}$")]
         public string Password { get; set; }
 
         [Required]
