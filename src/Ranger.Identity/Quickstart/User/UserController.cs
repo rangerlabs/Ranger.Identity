@@ -94,16 +94,37 @@ namespace Ranger.Identity
             try
             {
                 var user = await localUserManager.FindByIdAsync(userId);
-                result = await localUserManager.ResetPasswordAsync(user, userConfirmPasswordResetModel.Token, userConfirmPasswordResetModel.NewPassword);
+                try
+                {
+                    result = await localUserManager.ResetPasswordAsync(user, userConfirmPasswordResetModel.Token, userConfirmPasswordResetModel.NewPassword);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, $"Failed to set password for user '{user.Email}'.");
+                    throw;
+                }
                 if (result.Succeeded)
                 {
+                    if (!user.EmailConfirmed)
+                    {
+                        user.EmailConfirmed = true;
+                        try
+                        {
+                            await localUserManager.UpdateAsync(user);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogError(ex, $"Failed to mark user '{user.Email}' as confirmed.");
+                            throw;
+                        }
+                    }
                     await signInManager.SignOutAsync();
                 }
             }
             catch (Exception)
             {
                 var apiErrorContent = new ApiErrorContent();
-                apiErrorContent.Errors.Add("An error occurrred confirming the email address.");
+                apiErrorContent.Errors.Add("An error occurrred setting the user's password.");
                 return Conflict(apiErrorContent);
             }
             return result.Succeeded ? NoContent() : StatusCode(StatusCodes.Status304NotModified);
@@ -154,13 +175,22 @@ namespace Ranger.Identity
         [HttpPut("/user/{userId}/confirm")]
         public async Task<IActionResult> Confirm([FromRoute] string userId, UserConfirmModel confirmModel)
         {
-
             var localUserManager = userManager(Domain);
-            IdentityResult result = null;
+            IdentityResult confirmResult = null;
+            IdentityResult passwordSetResult = null;
+
             try
             {
                 var user = await localUserManager.FindByIdAsync(userId);
-                result = await localUserManager.ConfirmEmailAsync(user, confirmModel.Token);
+                confirmResult = await localUserManager.ConfirmEmailAsync(user, confirmModel.Token);
+                if (confirmResult.Succeeded)
+                {
+                    passwordSetResult = await localUserManager.ChangePasswordAsync(user, GlobalConfig.TempPassword, confirmModel.NewPassword);
+                    if (!passwordSetResult.Succeeded)
+                    {
+                        logger.LogError($"Failed to set password for user '{user.Email}' after confirming their account.");
+                    }
+                }
             }
             catch (Exception)
             {
@@ -168,7 +198,11 @@ namespace Ranger.Identity
                 apiErrorContent.Errors.Add("An error occurrred confirming the email address.");
                 return Conflict(apiErrorContent);
             }
-            return result.Succeeded ? NoContent() : StatusCode(StatusCodes.Status304NotModified);
+            if (confirmResult.Succeeded && !passwordSetResult.Succeeded)
+            {
+
+            }
+            return confirmResult.Succeeded ? NoContent() : StatusCode(StatusCodes.Status304NotModified);
         }
 
         [HttpGet("/user/{email}")]

@@ -52,7 +52,7 @@ namespace Ranger.Identity
             IdentityResult roleResult = null;
             try
             {
-                createResult = await localUserManager.CreateAsync(user);
+                createResult = await localUserManager.CreateAsync(user, GlobalConfig.TempPassword);
                 roleResult = await localUserManager.AddToRoleAsync(user, command.Role);
             }
             catch (Exception ex)

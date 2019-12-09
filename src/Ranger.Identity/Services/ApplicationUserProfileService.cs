@@ -63,7 +63,6 @@ namespace Ranger.Identity
                 claims.Add(new Claim("role", r));
             }
             context.IssuedClaims.AddRange(claims);
-
         }
 
         public async Task IsActiveAsync(IsActiveContext context)
