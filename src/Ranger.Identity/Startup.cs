@@ -31,6 +31,8 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using IdentityServer4;
+using IdentityServer4.Configuration;
+using Microsoft.AspNetCore.Rewrite;
 
 namespace Ranger.Identity
 {
@@ -197,13 +199,9 @@ namespace Ranger.Identity
             forwardOptions.KnownProxies.Clear();
             app.UseForwardedHeaders(forwardOptions);
 
-
             applicationLifetime.ApplicationStopping.Register(OnShutdown);
-            app.UsePathBase("/auth");
             InitializeDatabase(app, loggerFactory.CreateLogger<Startup>());
             app.UseIdentityServer();
-            app.UseStaticFiles();
-            app.UseMvcWithDefaultRoute();
             this.busSubscriber = app.UseRabbitMQ()
                 .SubscribeCommand<CreateNewTenantOwner>((c, e) =>
                    new CreateNewTenantOwnerRejected(e.Message, ""))
@@ -216,9 +214,11 @@ namespace Ranger.Identity
                     new UpdateUserRoleRejected(e.Message, "")
                 );
 
+            app.UseRewriter(
+                new RewriteOptions().AddRewrite(@"^auth(.*)", "$1", true)
+            );
 
             app.UseStaticFiles();
-
             app.UseRouting();
             app.UseIdentityServer();
             app.UseAuthorization();
