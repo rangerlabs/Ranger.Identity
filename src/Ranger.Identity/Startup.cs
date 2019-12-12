@@ -51,16 +51,11 @@ namespace Ranger.Identity
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllersWithViews(options =>
-            {
-                options.EnableEndpointRouting = false;
-
-            })
+            services.AddControllersWithViews()
             .AddNewtonsoftJson(options =>
             {
                 options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
                 options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
-
             });
 
             services.AddSingleton<ITenantsClient, TenantsClient>(provider =>
@@ -218,6 +213,7 @@ namespace Ranger.Identity
                 new RewriteOptions().AddRewrite(@"^auth(.*)", "$1", true)
             );
 
+            app.UsePathBase("/auth");
             app.UseStaticFiles();
             app.UseRouting();
             app.UseIdentityServer();
