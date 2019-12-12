@@ -209,11 +209,10 @@ namespace Ranger.Identity
                     new UpdateUserRoleRejected(e.Message, "")
                 );
 
-            app.UseRewriter(
-                new RewriteOptions().AddRewrite(@"^auth(.*)", "$1", true)
-            );
-
-            app.UsePathBase("/auth");
+            if (Environment.IsProduction())
+            {
+                app.UsePathBase("/auth");
+            }
             app.UseStaticFiles();
             app.UseRouting();
             app.UseIdentityServer();
