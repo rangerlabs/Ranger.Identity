@@ -10,6 +10,10 @@ $mdc-typography-font-family: unquote("'Lato', sans-serif");
     border-bottom: 1px solid rgba(0, 0, 0, 0.12);
 }
 
+.mdc-button {
+    font-weight: 700;
+}
+
 .mdc-text-field {
     background-color: none;
 }

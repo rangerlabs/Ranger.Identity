@@ -225,6 +225,20 @@ namespace Ranger.Identity
             return Ok(MapUserToUserResponse(user, role.First()));
         }
 
+        [HttpGet("/user/{email}/role")]
+        [TenantDomainRequired]
+        public async Task<IActionResult> GetUserRole([FromRoute] string email)
+        {
+            var localUserManager = userManager(Domain);
+            var user = await localUserManager.FindByEmailAsync(email);
+            if (user is null)
+            {
+                return NotFound();
+            }
+            var role = await localUserManager.GetRolesAsync(user);
+            return Ok(new { role = role.First() });
+        }
+
         [HttpPut("/user/{username}/password-reset")]
         [TenantDomainRequired]
         public async Task<IActionResult> PutPasswordResetRequest([FromRoute] string username, PasswordResetModel passwordResetModel)
