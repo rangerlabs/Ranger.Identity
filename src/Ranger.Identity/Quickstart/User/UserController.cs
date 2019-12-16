@@ -44,16 +44,40 @@ namespace Ranger.Identity
             this.logger = logger;
         }
 
+        [HttpPut("/user/{username}")]
+        [TenantDomainRequired]
+        public async Task<IActionResult> AccountUpdate([FromRoute] string username, AccountUpdateModel accountInfoModel)
+        {
+            var localUserManager = userManager(Domain);
+            RangerUser user = null;
+            try
+            {
+                user = await localUserManager.FindByEmailAsync(username);
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, "An error occurred retrieving the user.");
+                return InternalServerError();
+            }
+            if (user is null)
+            {
+                return NotFound();
+            }
+            user.LastName = accountInfoModel.LastName;
+            user.FirstName = accountInfoModel.FirstName;
+            var result = await localUserManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                logger.LogError($"Failed to update user {username}. Errors: {String.Join(';', result.Errors.Select(_ => _.Description).ToList())}.");
+                return InternalServerError();
+            }
+            return Ok();
+        }
+
         [HttpPut("/user/{username}/email-change")]
         [TenantDomainRequired]
         public async Task<IActionResult> PutPasswordResetRequest([FromRoute] string username, EmailChangeModel emailChangeModel)
         {
-            if (String.IsNullOrWhiteSpace(username))
-            {
-                return BadRequest(new { errors = $"{nameof(username)} cannot be null or empty." });
-            }
-
-
             var localUserManager = userManager(Domain);
             RangerUser user = null;
             RangerUser conflictingUser = null;
