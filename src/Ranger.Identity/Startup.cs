@@ -124,7 +124,6 @@ namespace Ranger.Identity
                 .AddAspNetIdentity<RangerUser>()
                 .AddRedirectUriValidator<MultitenantRedirectUriValidator>()
                 .AddProfileService<ApplicationUserProfileService>()
-                // .AddResourceOwnerValidator<ApplicationUserResourceOwnerPasswordValidator>()
                 .AddConfigurationStore(options =>
                 {
                     options.ConfigureDbContext = builder =>

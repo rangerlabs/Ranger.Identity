@@ -142,7 +142,7 @@ namespace Ranger.Identity
                             throw;
                         }
                     }
-                    await signInManager.SignOutAsync();
+                    await localUserManager.UpdateSecurityStampAsync(user);
                 }
             }
             catch (Exception)
@@ -168,7 +168,7 @@ namespace Ranger.Identity
                     user.UserName = user.UnconfirmedEmail;
                     user.UnconfirmedEmail = "";
                     await localUserManager.UpdateAsync(user);
-                    await signInManager.SignOutAsync();
+                    await localUserManager.UpdateSecurityStampAsync(user);
                 }
                 else
                 {
