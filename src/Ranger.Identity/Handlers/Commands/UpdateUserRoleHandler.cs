@@ -42,7 +42,7 @@ namespace Ranger.Identity
                 var commandingUser = await localUserManager.FindByEmailAsync(command.CommandingUserEmail);
                 var user = await localUserManager.FindByEmailAsync(command.Email);
 
-                var canUpdateUser = await RoleAssignmentValidator.Validate(commandingUser, user, localUserManager);
+                var canUpdateUser = await AssignmentValidator.ValidateAsync(commandingUser, user, localUserManager);
                 if (!canUpdateUser)
                 {
                     throw new RangerException("Unauthorized to make changes to the requested user.");

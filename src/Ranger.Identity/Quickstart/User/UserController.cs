@@ -53,6 +53,7 @@ namespace Ranger.Identity
             try
             {
                 user = await localUserManager.FindByEmailAsync(username);
+
             }
             catch (Exception ex)
             {
@@ -72,6 +73,68 @@ namespace Ranger.Identity
                 return InternalServerError();
             }
             return Ok();
+        }
+
+        [HttpDelete("/user/{email}/account")]
+        [TenantDomainRequired]
+        public async Task<IActionResult> DeleteAccount([FromRoute] string email, AccountDeleteModel accountDeleteModel)
+        {
+            var localUserManager = userManager(Domain);
+            RangerUser user = null;
+            try
+            {
+                user = await localUserManager.FindByEmailAsync(email);
+                var result = await localUserManager.CheckPasswordAsync(user, accountDeleteModel.Password);
+                if (!result)
+                {
+                    var apiErrorContent = new ApiErrorContent();
+                    apiErrorContent.Errors.Add("The password was invalid.");
+                    return BadRequest(apiErrorContent);
+                }
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, "An error occurred retrieving the user or users roles.");
+                return InternalServerError();
+            }
+
+            if (user is null)
+            {
+                return NotFound();
+            }
+
+            await localUserManager.DeleteAsync(user);
+            return NoContent();
+        }
+
+        [HttpDelete("/user/{email}")]
+        [TenantDomainRequired]
+        public async Task<IActionResult> DeleteUserByEmail([FromRoute] string email, DeleteUserModel deleteUserModel)
+        {
+            var localUserManager = userManager(Domain);
+            RangerUser user = null;
+            try
+            {
+                user = await localUserManager.FindByEmailAsync(email);
+                var commandingUser = (await localUserManager.FindByEmailAsync(deleteUserModel.CommandingUserEmail));
+                if (!await AssignmentValidator.ValidateAsync(commandingUser, user, localUserManager))
+                {
+                    return Forbid();
+                }
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, "An error occurred retrieving the user or users roles.");
+                return InternalServerError();
+            }
+
+            if (user is null)
+            {
+                return NotFound();
+            }
+
+            await localUserManager.DeleteAsync(user);
+            return NoContent();
         }
 
         [HttpPut("/user/{username}/email-change")]
