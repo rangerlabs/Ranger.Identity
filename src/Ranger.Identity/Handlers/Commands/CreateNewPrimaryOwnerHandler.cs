@@ -13,18 +13,18 @@ using Ranger.RabbitMQ;
 
 namespace Ranger.Identity
 {
-    public class CreateNewTenantOwnerHandler : ICommandHandler<CreateNewTenantOwner>
+    public class CreateNewPrimaryOwnerHandler : ICommandHandler<CreateNewPrimaryOwner>
     {
         private readonly IBusPublisher busPublisher;
         private readonly Func<string, RangerUserManager> userManager;
         private readonly ITenantsClient tenantsClient;
-        private readonly ILogger<CreateNewTenantOwnerHandler> logger;
+        private readonly ILogger<CreateNewPrimaryOwnerHandler> logger;
 
-        public CreateNewTenantOwnerHandler(
+        public CreateNewPrimaryOwnerHandler(
             IBusPublisher busPublisher,
             Func<string, RangerUserManager> userManager,
             ITenantsClient tenantsClient,
-            ILogger<CreateNewTenantOwnerHandler> logger)
+            ILogger<CreateNewPrimaryOwnerHandler> logger)
         {
             this.busPublisher = busPublisher;
             this.userManager = userManager;
@@ -32,7 +32,7 @@ namespace Ranger.Identity
             this.logger = logger;
         }
 
-        public async Task HandleAsync(CreateNewTenantOwner command, ICorrelationContext context)
+        public async Task HandleAsync(CreateNewPrimaryOwner command, ICorrelationContext context)
         {
             logger.LogInformation($"Creating new tenant owner '{command.Email}' for tenant with domain '{command.Domain}'.");
 
@@ -51,7 +51,7 @@ namespace Ranger.Identity
             try
             {
                 await localUserManager.CreateAsync(user, command.Password);
-                await localUserManager.AddToRoleAsync(user, "TenantOwner");
+                await localUserManager.AddToRoleAsync(user, "PrimaryOwner");
             }
             catch (EventStreamDataConstraintException ex)
             {
@@ -64,7 +64,7 @@ namespace Ranger.Identity
                 throw;
             }
 
-            this.busPublisher.Publish(new NewTenantOwnerCreated(user.Email, user.FirstName, user.LastName, command.Domain, "TenantOwner"), context);
+            this.busPublisher.Publish(new NewPrimaryOwnerCreated(user.Email, user.FirstName, user.LastName, command.Domain, "PrimaryOwner"), context);
         }
     }
 }

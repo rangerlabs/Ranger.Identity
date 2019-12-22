@@ -15,11 +15,11 @@ namespace Ranger.Identity
             {
                 return false;
             }
-            if (commandingUserRoleEnum == RolesEnum.TenantOwner && recipientRoleEnum == RolesEnum.TenantOwner)
+            if (commandingUserRoleEnum == RolesEnum.PrimaryOwner && recipientRoleEnum == RolesEnum.PrimaryOwner)
             {
                 return false;
             }
-            if (commandingUserRoleEnum == RolesEnum.TenantOwner || commandingUserRoleEnum <= recipientRoleEnum)
+            if (commandingUserRoleEnum == RolesEnum.PrimaryOwner || commandingUserRoleEnum <= recipientRoleEnum)
             {
                 return true;
             }

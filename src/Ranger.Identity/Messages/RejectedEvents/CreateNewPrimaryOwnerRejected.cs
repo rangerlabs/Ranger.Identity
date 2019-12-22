@@ -3,9 +3,9 @@ using Ranger.RabbitMQ;
 namespace Ranger.Identity
 {
     [MessageNamespaceAttribute("idenity")]
-    public class CreateNewTenantOwnerRejected : IRejectedEvent
+    public class CreateNewPrimaryOwnerRejected : IRejectedEvent
     {
-        public CreateNewTenantOwnerRejected(string reason, string code)
+        public CreateNewPrimaryOwnerRejected(string reason, string code)
         {
             this.Reason = reason;
             this.Code = code;
