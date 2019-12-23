@@ -41,18 +41,18 @@ namespace Ranger.Identity
                             return;
                         }
                     }
-                    catch (HttpClientException ex)
+                    catch (HttpClientException<EnabledResult> ex)
                     {
                         if ((int)ex.ApiResponse.StatusCode == StatusCodes.Status404NotFound)
                         {
-                            context.Result = new NotFoundObjectResult($"No tenant found for the provided subdomain '{domain}'.");
+                            context.Result = new RedirectResult($"https://{GlobalConfig.RedirectHost}/enter-domain");
                             return;
                         }
                     }
                     catch (Exception ex)
                     {
                         this.logger.LogError(ex, $"An exception occurred validating whether the domain '{domain}' exists.");
-                        context.Result = new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                        context.Result = new RedirectResult($"https://{GlobalConfig.RedirectHost}/enter-domain");
                         return;
                     }
                 }
