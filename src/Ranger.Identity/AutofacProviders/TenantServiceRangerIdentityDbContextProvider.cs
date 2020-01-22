@@ -8,7 +8,6 @@ using Npgsql;
 using Ranger.Common;
 using Ranger.Identity.Data;
 using Ranger.InternalHttpClient;
-using System.Web;
 
 namespace Ranger.Identity
 {
