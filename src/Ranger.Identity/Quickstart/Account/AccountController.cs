@@ -25,7 +25,7 @@ namespace IdentityServer4.Quickstart.UI
     public class AccountController : BaseMvcController
     {
         private readonly Func<string, RangerUserManager> userManager;
-        private readonly SignInManager<RangerUser> signInManager;
+        private readonly Func<string, RangerSignInManager> signInManager;
         private readonly IIdentityServerInteractionService _interaction;
         private readonly IClientStore _clientStore;
         private readonly IAuthenticationSchemeProvider _schemeProvider;
@@ -35,7 +35,7 @@ namespace IdentityServer4.Quickstart.UI
         public AccountController(
             Func<string, RangerUserManager> userManager,
             IIdentityServerInteractionService interaction,
-            SignInManager<RangerUser> signInManager,
+            Func<string, RangerSignInManager> signInManager,
             IClientStore clientStore,
             IAuthenticationSchemeProvider schemeProvider,
             IEventService events,
@@ -120,7 +120,8 @@ namespace IdentityServer4.Quickstart.UI
 
                 if (tenant != null)
                 {
-                    var result = await signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberLogin, lockoutOnFailure: true);
+                    var localSignInManager = signInManager(Domain);
+                    var result = await localSignInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberLogin, lockoutOnFailure: true);
                     if (result.Succeeded)
                     {
                         var localUserManager = userManager(Domain);
@@ -229,8 +230,9 @@ namespace IdentityServer4.Quickstart.UI
 
                 if (tenant != null)
                 {
+                    var localSignInManager = signInManager(Domain);
                     // delete local authentication cookie
-                    await signInManager.SignOutAsync();
+                    await localSignInManager.SignOutAsync();
                     // raise the logout event
                     await _events.RaiseAsync(new UserLogoutSuccessEvent(User.GetSubjectId(), User.GetDisplayName()));
                 }

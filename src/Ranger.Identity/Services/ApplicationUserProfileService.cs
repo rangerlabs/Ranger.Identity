@@ -68,8 +68,9 @@ namespace Ranger.Identity
         public async Task IsActiveAsync(IsActiveContext context)
         {
             var sub = context.Subject.GetSubjectId();
-            var localUserManager = userManager(contextAccessor.HttpContext.Request.Host.GetDomainFromHost());
-            var user = await localUserManager.FindByIdAsync(context.Subject.GetSubjectId());
+            var domain = contextAccessor.HttpContext.Request.Host.GetDomainFromHost();
+            var localUserManager = userManager(domain);
+            var user = await localUserManager.FindByIdAsync(sub);
             context.IsActive = user != null;
         }
     }

@@ -29,6 +29,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using IdentityServer4;
 using IdentityServer4.Configuration;
 using Microsoft.AspNetCore.Rewrite;
+using Microsoft.IdentityModel.Logging;
 
 namespace Ranger.Identity
 {
@@ -156,23 +157,31 @@ namespace Ranger.Identity
             builder.RegisterType<RangerIdentityDbContext>().InstancePerDependency();
             builder.Register((c, p) =>
             {
-                var options = c.Resolve<IOptions<IdentityOptions>>();
-                var passwordHasher = c.Resolve<IPasswordHasher<RangerUser>>();
-                var userValidators = c.Resolve<IEnumerable<IUserValidator<RangerUser>>>();
-                var passwordValidators = c.Resolve<IEnumerable<IPasswordValidator<RangerUser>>>();
-                var keyNormalizer = c.Resolve<ILookupNormalizer>();
-                var errors = c.Resolve<IdentityErrorDescriber>();
-                var services = c.Resolve<IServiceProvider>();
-                var logger = c.Resolve<ILogger<UserManager<RangerUser>>>();
-
-
                 var provider = c.Resolve<TenantServiceRangerIdentityDbContext>();
                 var (dbContextOptions, model) = provider.GetDbContextOptions(p.TypedAs<string>());
                 var userStore = new UserStore<RangerUser>(new RangerIdentityDbContext(dbContextOptions));
 
-                return new RangerUserManager(model, userStore, options, passwordHasher, userValidators, passwordValidators, keyNormalizer, errors, services, logger);
+                return new RangerUserManager(model,
+                    userStore,
+                    c.Resolve<IOptions<IdentityOptions>>(),
+                    c.Resolve<IPasswordHasher<RangerUser>>(),
+                    c.Resolve<IEnumerable<IUserValidator<RangerUser>>>(),
+                    c.Resolve<IEnumerable<IPasswordValidator<RangerUser>>>(),
+                    c.Resolve<ILookupNormalizer>(),
+                    c.Resolve<IdentityErrorDescriber>(),
+                    c.Resolve<IServiceProvider>(),
+                    c.Resolve<ILogger<UserManager<RangerUser>>>());
             });
-            builder.RegisterType<RangerSignInManager>().As(typeof(SignInManager<RangerUser>));
+            builder.Register((c, p) =>
+            {
+                return new RangerSignInManager(c.Resolve<RangerUserManager>(p),
+                    c.Resolve<IHttpContextAccessor>(),
+                    c.Resolve<IUserClaimsPrincipalFactory<RangerUser>>(),
+                    c.Resolve<IOptions<IdentityOptions>>(),
+                    c.Resolve<ILogger<SignInManager<RangerUser>>>(),
+                    c.Resolve<IAuthenticationSchemeProvider>(),
+                    c.Resolve<IUserConfirmation<RangerUser>>());
+            });
             builder.AddRabbitMq(this.loggerFactory);
         }
 

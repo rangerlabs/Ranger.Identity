@@ -9,9 +9,7 @@ namespace Ranger.Identity.Data
 {
     public class RangerSignInManager : SignInManager<RangerUser>
     {
-        public delegate SignInManager<RangerUser> Factory(UserManager<RangerUser> userStore);
-
-        public RangerSignInManager(UserManager<RangerUser> userStore,
+        public RangerSignInManager(RangerUserManager userStore,
                                    IHttpContextAccessor contextAccessor,
                                    IUserClaimsPrincipalFactory<RangerUser> claimsFactory,
                                    IOptions<IdentityOptions> optionsAccessor,
