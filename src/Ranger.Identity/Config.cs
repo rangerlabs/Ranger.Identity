@@ -98,7 +98,6 @@ namespace Ranger.Identity
             {
                 ClientId = "react",
                 ClientName = "ReactClient",
-
                 AllowedGrantTypes = GrantTypes.Code,
                 AccessTokenLifetime = 900, //15 minutes
                 RequirePkce = true,
