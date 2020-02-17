@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Ranger.Common;
-using Ranger.Common.Data.Exceptions;
 using Ranger.Identity.Data;
 using Ranger.InternalHttpClient;
 using Ranger.RabbitMQ;

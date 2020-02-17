@@ -26,10 +26,6 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using IdentityServer4;
-using IdentityServer4.Configuration;
-using Microsoft.AspNetCore.Rewrite;
-using Microsoft.IdentityModel.Logging;
 
 namespace Ranger.Identity
 {
@@ -207,10 +203,11 @@ namespace Ranger.Identity
                 .SubscribeCommand<CreateUser>((c, e) =>
                    new CreateUserRejected(e.Message, ""))
                 .SubscribeCommand<InitializeTenant>((c, e) =>
-                   new InitializeTenantRejected(e.Message, "")
-                )
+                   new InitializeTenantRejected(e.Message, ""))
                 .SubscribeCommand<UpdateUserRole>((c, e) =>
-                    new UpdateUserRoleRejected(e.Message, "")
+                    new UpdateUserRoleRejected(e.Message, ""))
+                .SubscribeCommand<TransferPrimaryOwnership>((c, e) =>
+                    new TransferPrimaryOwnershipRejected(e.Message, "")
                 );
 
             app.UsePathBase("/auth");

@@ -84,10 +84,9 @@ namespace Ranger.Identity
                         throw new RangerException("An unspecified error occurred. Please try again later.");
                     }
                 }
-
-                if (roleAddResult is null)
+                else
                 {
-                    logger.LogWarning("The user was not modified.");
+                    logger.LogWarning("The user role was not modified.");
                 }
 
                 busPublisher.Publish(new UserRoleUpdated(command.Domain, user.Id, command.Email, user.FirstName, command.Role), context);
