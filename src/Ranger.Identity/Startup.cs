@@ -207,8 +207,10 @@ namespace Ranger.Identity
                 .SubscribeCommand<UpdateUserRole>((c, e) =>
                     new UpdateUserRoleRejected(e.Message, ""))
                 .SubscribeCommand<TransferPrimaryOwnership>((c, e) =>
-                    new TransferPrimaryOwnershipRejected(e.Message, "")
-                );
+                    new TransferPrimaryOwnershipRejected(e.Message, ""))
+                .SubscribeCommand<GeneratePrimaryOwnershipTransferToken>((c, e) =>
+                    new GeneratePrimaryOwnershipTransferTokenRejected(e.Message, ""))
+                ;
 
             app.UsePathBase("/auth");
             app.UseStaticFiles();
