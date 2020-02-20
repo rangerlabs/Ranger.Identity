@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using System.Web;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Ranger.Common;
@@ -36,7 +37,7 @@ namespace Ranger.Identity.Handlers.Commands
             string token = "";
             try
             {
-                token = await localUserManager.GenerateUserTokenAsync(user, TokenOptions.DefaultProvider, "PrimaryOwnerTransfer");
+                token = HttpUtility.UrlEncode(await localUserManager.GenerateUserTokenAsync(user, TokenOptions.DefaultProvider, "PrimaryOwnerTransfer"));
             }
             catch (Exception ex)
             {

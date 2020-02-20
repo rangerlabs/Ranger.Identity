@@ -55,11 +55,10 @@ namespace Ranger.Identity
                 }
 
                 var currentRole = await localUserManager.GetRangerRoleAsync(user);
-                IdentityResult roleAddResult = null;
                 if (newRole != currentRole)
                 {
                     IdentityResult roleRemoveResult = null;
-                    roleAddResult = await localUserManager.AddToRoleAsync(user, command.Role);
+                    var roleAddResult = await localUserManager.AddToRoleAsync(user, command.Role);
                     if (roleAddResult.Succeeded)
                     {
                         roleRemoveResult = await localUserManager.RemoveFromRoleAsync(user, Enum.GetName(typeof(RolesEnum), currentRole));

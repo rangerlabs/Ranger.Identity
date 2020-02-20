@@ -45,10 +45,9 @@ namespace Ranger.Identity.Handlers.Commands
                     throw new RangerException("The recipient of the transfer request was not found.");
                 }
 
-                var tokenResult = await localUserManager.VerifyUserTokenAsync(commandingUser, TokenOptions.DefaultProvider, "PrimaryOwnerTransfer", message.Token);
+                var tokenResult = await localUserManager.VerifyUserTokenAsync(transferUser, TokenOptions.DefaultProvider, "PrimaryOwnerTransfer", message.Token);
                 if (tokenResult)
                 {
-
                     var currentCommandingUserRole = await localUserManager.GetRangerRoleAsync(commandingUser);
 
                     if (currentCommandingUserRole == RolesEnum.PrimaryOwner)
@@ -60,17 +59,18 @@ namespace Ranger.Identity.Handlers.Commands
                             var fromPrimaryOwnerRole = await localUserManager.RemoveFromRoleAsync(commandingUser, Enum.GetName(typeof(RolesEnum), RolesEnum.PrimaryOwner));
                             if (fromPrimaryOwnerRole.Succeeded)
                             {
+                                var currentRole = await localUserManager.GetRangerRoleAsync(transferUser);
                                 var toPrimaryOwnerResult = await localUserManager.AddToRoleAsync(transferUser, Enum.GetName(typeof(RolesEnum), RolesEnum.PrimaryOwner));
                                 if (toPrimaryOwnerResult.Succeeded)
                                 {
-                                    var fromOwnerResult = await localUserManager.RemoveFromRoleAsync(transferUser, Enum.GetName(typeof(RolesEnum), RolesEnum.Owner));
+                                    var fromOwnerResult = await localUserManager.RemoveFromRoleAsync(transferUser, Enum.GetName(typeof(RolesEnum), currentRole));
                                     if (fromOwnerResult.Succeeded)
                                     {
                                         busPublisher.Publish(new PrimaryOwnershipTransfered(), context);
                                     }
                                     else
                                     {
-                                        logger.LogError("The Primary Owner was transfered successfully but failed to remove the Owner role from the new Primary Owner. Verify the user does not have a redundant role.");
+                                        logger.LogError($"The Primary Owner role was transfered successfully but failed to remove the previous role from the new Primary Owner, {message.TransferUserEmail}. Verify the user does not have a redundant role.");
                                         throw new RangerException("An unspecified error occurred transfering the domain. Please contant Ranger support for additional assitance.");
                                     }
                                 }
