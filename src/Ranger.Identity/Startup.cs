@@ -178,7 +178,7 @@ namespace Ranger.Identity
                     c.Resolve<IAuthenticationSchemeProvider>(),
                     c.Resolve<IUserConfirmation<RangerUser>>());
             });
-            builder.AddRabbitMq(this.loggerFactory);
+            builder.AddRabbitMq();
         }
 
         public void Configure(IApplicationBuilder app, IHostApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory)

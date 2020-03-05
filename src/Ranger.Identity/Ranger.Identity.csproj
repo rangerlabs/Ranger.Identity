@@ -30,10 +30,10 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="4.1.0" />
 
-    <PackageReference Include="Ranger.Monitoring" Version="2.0.1" />
-    <PackageReference Include="Ranger.RabbitMQ" Version="2.0.0" />
-    <PackageReference Include="Ranger.InternalHttpClient" Version="2.2.8" />
-    <PackageReference Include="Ranger.Common" Version="2.2.1" />
-    <PackageReference Include="Ranger.ApiUtilities" Version="2.0.0" />
+    <PackageReference Include="Ranger.Mongo" Version="2.1.0" />
+    <PackageReference Include="Ranger.RabbitMQ" Version="2.1.0" />
+    <PackageReference Include="Ranger.InternalHttpClient" Version="3.1.0" />
+    <PackageReference Include="Ranger.Common" Version="2.2.13" />
+    <PackageReference Include="Ranger.ApiUtilities" Version="3.1.0" />
   </ItemGroup>
 </Project>
