@@ -33,7 +33,7 @@
     <PackageReference Include="Ranger.Monitoring" Version="2.1.0" />
     <PackageReference Include="Ranger.RabbitMQ" version="2.2.1" />
     <PackageReference Include="Ranger.InternalHttpClient" Version="3.1.0" />
-    <PackageReference Include="Ranger.Common" Version="2.3.5" />
+    <PackageReference Include="Ranger.Common" Version="2.3.8" />
     <PackageReference Include="Ranger.ApiUtilities" Version="3.1.0" />
   </ItemGroup>
 </Project>
