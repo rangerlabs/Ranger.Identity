@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Ranger.Common;
 using Ranger.Identity;
 using Ranger.Identity.Data;
 using Ranger.InternalHttpClient;
@@ -15,7 +16,7 @@ namespace IdentityServer4.Quickstart.UI
     [SecurityHeaders]
     [AllowAnonymous]
     [TenantSubdomainRequired]
-    public class PasswordResetController : BaseMvcController
+    public class PasswordResetController : Controller
     {
         private readonly Func<string, RangerUserManager> _userManager;
         private readonly IBusPublisher _busPublisher;
@@ -46,14 +47,14 @@ namespace IdentityServer4.Quickstart.UI
         {
             if (ModelState.IsValid)
             {
-                var localUserManager = _userManager(Domain);
+                var localUserManager = _userManager(Request.Host.GetDomainFromHost());
                 var user = await localUserManager.FindByEmailAsync(model.Email);
                 if (user != null)
                 {
                     var (_, domain) = GetDomainFromRequestHost();
                     var tenant = await _tenantClient.GetTenantAsync<TenantOrganizationNameModel>(domain);
                     var token = HttpUtility.UrlEncode(await localUserManager.GeneratePasswordResetTokenAsync(user));
-                    _busPublisher.Send(new SendResetPasswordEmail(user.FirstName, model.Email, domain, user.Id, tenant.OrganizationName, token), HttpContext.GetCorrelationContextFromHttpContext<SendResetPasswordEmail>(model.Email));
+                    _busPublisher.Send(new SendResetPasswordEmail(user.FirstName, model.Email, domain, user.Id, tenant.OrganizationName, token), HttpContext.GetCorrelationContextFromHttpContext<SendResetPasswordEmail>(domain, model.Email));
                 }
             }
             return View("PasswordResetResult");

@@ -55,6 +55,22 @@ namespace Ranger.Identity
                 },
                 Scopes = { new Scope("geofencesApi", "Geofences Api") }
             };
+            var breadcrumbsApiResource = new ApiResource
+            {
+                Name = "breadcrumbsApi",
+                ApiSecrets = {
+                    new Secret ("Esyz6NkukU98TqzpXU".Sha256())
+                },
+                Scopes = { new Scope("breadcrumbsApi", "Breadcrumbs Api") }
+            };
+            var subscriptionsApiResource = new ApiResource
+            {
+                Name = "subscriptionsApi",
+                ApiSecrets = {
+                    new Secret ("4T3SXqXaD6GyGHn4RY".Sha256())
+                },
+                Scopes = { new Scope("subscriptionsApi", "Subscriptions Api") }
+            };
             var identityApiResource = new ApiResource
             {
                 Name = IdentityServerConstants.LocalApi.ScopeName,
@@ -63,7 +79,17 @@ namespace Ranger.Identity
                 },
                 Scopes = { new Scope(IdentityServerConstants.LocalApi.ScopeName, "Identity Api") }
             };
-            return new List<ApiResource> { apiGatewayResource, tenantsApiResource, projectsApiResource, integrationsApiResource, identityApiResource };
+            return new List<ApiResource>
+            {
+                apiGatewayResource,
+                tenantsApiResource,
+                projectsApiResource,
+                integrationsApiResource,
+                geofencesApiResource,
+                subscriptionsApiResource,
+                breadcrumbsApiResource,
+                identityApiResource
+            };
         }
 
         public static IEnumerable<Client> GetClients()
@@ -81,7 +107,9 @@ namespace Ranger.Identity
                     new Secret ("89pCcXHuDYTXY".Sha256 ()),
                     new Secret ("usGwT8Qsp4La2".Sha256()),
                     new Secret ("6HyhzSoSHvxTG".Sha256()),
-                    new Secret ("9pwJgpgpu6PNJi".Sha256())
+                    new Secret ("9pwJgpgpu6PNJi".Sha256()),
+                    new Secret ("Esyz6NkukU98TqzpXU".Sha256()),
+                    new Secret ("4T3SXqXaD6GyGHn4RY".Sha256())
                 },
 
                 AllowedScopes = {
@@ -90,7 +118,9 @@ namespace Ranger.Identity
                     "tenantsApi",
                     "projectsApi",
                     "integrationsApi",
-                    "geofencesApi"
+                    "geofencesApi",
+                    "breadcrumbsApi",
+                    "subscriptionsApi"
                 }
             };
 

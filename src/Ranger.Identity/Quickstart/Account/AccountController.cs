@@ -22,7 +22,7 @@ namespace IdentityServer4.Quickstart.UI
     [SecurityHeaders]
     [AllowAnonymous]
     [TenantSubdomainRequired]
-    public class AccountController : BaseMvcController
+    public class AccountController : Controller
     {
         private readonly Func<string, RangerUserManager> userManager;
         private readonly Func<string, RangerSignInManager> signInManager;
@@ -120,11 +120,11 @@ namespace IdentityServer4.Quickstart.UI
 
                 if (tenant != null)
                 {
-                    var localSignInManager = signInManager(Domain);
+                    var localSignInManager = signInManager(Request.Host.GetDomainFromHost());
                     var result = await localSignInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberLogin, lockoutOnFailure: true);
                     if (result.Succeeded)
                     {
-                        var localUserManager = userManager(Domain);
+                        var localUserManager = userManager(Request.Host.GetDomainFromHost());
                         var user = await localUserManager.FindByEmailAsync(model.Email);
                         if (user != null)
                         {
@@ -230,7 +230,7 @@ namespace IdentityServer4.Quickstart.UI
 
                 if (tenant != null)
                 {
-                    var localSignInManager = signInManager(Domain);
+                    var localSignInManager = signInManager(Request.Host.GetDomainFromHost());
                     // delete local authentication cookie
                     await localSignInManager.SignOutAsync();
                     // raise the logout event

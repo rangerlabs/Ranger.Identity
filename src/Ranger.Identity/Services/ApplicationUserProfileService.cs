@@ -53,7 +53,8 @@ namespace Ranger.Identity
                 new Claim ("email", user.Email),
                 new Claim ("firstName", user.FirstName),
                 new Claim ("lastName", user.LastName),
-                new Claim ("authorizedProjects", JsonConvert.SerializeObject(await projectsClient.GetProjectIdsForUser(domain, user.Email)))
+                new Claim ("domain", domain),
+                new Claim("authorizedProjects", JsonConvert.SerializeObject(await projectsClient.GetProjectIdsForUser(domain, user.Email)))
             };
 
             var role = await localUserManager.GetRolesAsync(user);

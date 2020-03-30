@@ -29,14 +29,21 @@ namespace Ranger.Identity
             return false;
         }
 
-        public static ICorrelationContext GetCorrelationContextFromHttpContext<T>(this HttpContext context, string email)
+        public static ICorrelationContext GetCorrelationContextFromHttpContext<T>(this HttpContext context, string domain, string email)
         {
-            StringValues domain;
-            bool success = context.Request.Headers.TryGetValue("x-ranger-domain", out domain);
+            if (string.IsNullOrWhiteSpace(domain))
+            {
+                throw new ArgumentException($"{nameof(domain)} was null or whitespace.");
+            }
+
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                throw new ArgumentException($"{nameof(email)} was null or whitespace.");
+            }
 
             return CorrelationContext.Create<T>(
                 Guid.NewGuid(),
-                success ? domain.First() : "",
+                domain,
                 email,
                 Guid.Empty,
                 context.Request.Path.ToString(),

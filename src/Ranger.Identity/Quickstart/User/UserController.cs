@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Npgsql;
-using Ranger.ApiUtilities;
 using Ranger.Common;
 using Ranger.Identity.Data;
 using Ranger.InternalHttpClient;
@@ -21,20 +20,20 @@ namespace Ranger.Identity
 {
     [ApiController]
     [Authorize(IdentityServerConstants.LocalApi.PolicyName)]
-    public class UserController : BaseApiController
+    public class UsersController : ControllerBase
     {
         private readonly Func<string, RangerUserManager> userManager;
         private readonly SignInManager<RangerUser> signInManager;
         private readonly IBusPublisher _busPublisher;
         private readonly ITenantsClient _tenantsClient;
-        private readonly ILogger<UserController> logger;
+        private readonly ILogger<UsersController> logger;
 
-        public UserController(
+        public UsersController(
                 IBusPublisher busPublisher,
                 Func<string, RangerUserManager> userManager,
                 SignInManager<RangerUser> signInManager,
                 ITenantsClient tenantsClient,
-                ILogger<UserController> logger
+                ILogger<UsersController> logger
             )
         {
             this._busPublisher = busPublisher;
@@ -44,11 +43,10 @@ namespace Ranger.Identity
             this.logger = logger;
         }
 
-        [HttpPut("/user/{username}")]
-        [TenantDomainRequired]
-        public async Task<IActionResult> AccountUpdate([FromRoute] string username, AccountUpdateModel accountInfoModel)
+        [HttpPut("{domain}/users/{username}")]
+        public async Task<IActionResult> AccountUpdate([FromRoute] string domain, [FromRoute] string username, AccountUpdateModel accountInfoModel)
         {
-            var localUserManager = userManager(Domain);
+            var localUserManager = userManager(domain);
             RangerUser user = null;
             try
             {
@@ -58,7 +56,7 @@ namespace Ranger.Identity
             catch (Exception ex)
             {
                 this.logger.LogError(ex, "An error occurred retrieving the user.");
-                return InternalServerError();
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
             if (user is null)
             {
@@ -70,16 +68,15 @@ namespace Ranger.Identity
             if (!result.Succeeded)
             {
                 logger.LogError($"Failed to update user {username}. Errors: {String.Join(';', result.Errors.Select(_ => _.Description).ToList())}.");
-                return InternalServerError();
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
             return Ok();
         }
 
-        [HttpDelete("/user/{email}/account")]
-        [TenantDomainRequired]
-        public async Task<IActionResult> DeleteAccount([FromRoute] string email, AccountDeleteModel accountDeleteModel)
+        [HttpDelete("{domain}/users/{email}/account")]
+        public async Task<IActionResult> DeleteAccount([FromRoute] string domain, [FromRoute] string email, AccountDeleteModel accountDeleteModel)
         {
-            var localUserManager = userManager(Domain);
+            var localUserManager = userManager(domain);
             RangerUser user = null;
             try
             {
@@ -95,7 +92,7 @@ namespace Ranger.Identity
             catch (Exception ex)
             {
                 this.logger.LogError(ex, "An error occurred retrieving the user or users roles.");
-                return InternalServerError();
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
 
             if (user is null)
@@ -107,11 +104,10 @@ namespace Ranger.Identity
             return NoContent();
         }
 
-        [HttpDelete("/user/{email}")]
-        [TenantDomainRequired]
-        public async Task<IActionResult> DeleteUserByEmail([FromRoute] string email, DeleteUserModel deleteUserModel)
+        [HttpDelete("{domain}/users/{email}")]
+        public async Task<IActionResult> DeleteUserByEmail([FromRoute] string domain, [FromRoute] string email, DeleteUserModel deleteUserModel)
         {
-            var localUserManager = userManager(Domain);
+            var localUserManager = userManager(domain);
             RangerUser user = null;
             try
             {
@@ -125,7 +121,7 @@ namespace Ranger.Identity
             catch (Exception ex)
             {
                 this.logger.LogError(ex, "An error occurred retrieving the user or users roles.");
-                return InternalServerError();
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
 
             if (user is null)
@@ -137,11 +133,10 @@ namespace Ranger.Identity
             return NoContent();
         }
 
-        [HttpPut("/user/{username}/email-change")]
-        [TenantDomainRequired]
-        public async Task<IActionResult> PutPasswordResetRequest([FromRoute] string username, EmailChangeModel emailChangeModel)
+        [HttpPut("{domain}/users/{username}/email-change")]
+        public async Task<IActionResult> PutEmailChangeRequest([FromRoute] string domain, [FromRoute] string username, EmailChangeModel emailChangeModel)
         {
-            var localUserManager = userManager(Domain);
+            var localUserManager = userManager(domain);
             RangerUser user = null;
             RangerUser conflictingUser = null;
             try
@@ -152,7 +147,7 @@ namespace Ranger.Identity
             catch (Exception ex)
             {
                 this.logger.LogError(ex, "An error occurred retrieving the user.");
-                return InternalServerError();
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
             if (user is null)
             {
@@ -168,14 +163,14 @@ namespace Ranger.Identity
             user.UnconfirmedEmail = emailChangeModel.Email;
             await localUserManager.UpdateAsync(user);
             var token = HttpUtility.UrlEncode(await localUserManager.GenerateChangeEmailTokenAsync(user, emailChangeModel.Email));
-            _busPublisher.Send(new SendChangeEmailEmail(user.FirstName, emailChangeModel.Email, Domain, user.Id, localUserManager.TenantOrganizationNameModel.OrganizationName, token), HttpContext.GetCorrelationContextFromHttpContext<SendResetPasswordEmail>(username));
+            _busPublisher.Send(new SendChangeEmailEmail(user.FirstName, emailChangeModel.Email, domain, user.Id, localUserManager.TenantOrganizationNameModel.OrganizationName, token), HttpContext.GetCorrelationContextFromHttpContext<SendResetPasswordEmail>(domain, username));
             return NoContent();
         }
 
-        [HttpPost("/user/{userId}/password-reset")]
-        public async Task<IActionResult> PasswordReset([FromRoute] string userId, UserConfirmPasswordResetModel userConfirmPasswordResetModel)
+        [HttpPost("{domain}/users/{userId}/password-reset")]
+        public async Task<IActionResult> PasswordReset([FromRoute] string domain, [FromRoute] string userId, UserConfirmPasswordResetModel userConfirmPasswordResetModel)
         {
-            var localUserManager = userManager(Domain);
+            var localUserManager = userManager(domain);
             IdentityResult result = null;
 
             try
@@ -217,10 +212,10 @@ namespace Ranger.Identity
             return result.Succeeded ? NoContent() : StatusCode(StatusCodes.Status304NotModified);
         }
 
-        [HttpPost("/user/{userId}/email-change")]
-        public async Task<IActionResult> EmailChange([FromRoute] string userId, UserConfirmEmailChangeModel userConfirmEmailChangeModel)
+        [HttpPost("{domain}/users/{userId}/email-change")]
+        public async Task<IActionResult> EmailChange([FromRoute] string domain, [FromRoute] string userId, UserConfirmEmailChangeModel userConfirmEmailChangeModel)
         {
-            var localUserManager = userManager(Domain);
+            var localUserManager = userManager(domain);
 
             try
             {
@@ -254,15 +249,15 @@ namespace Ranger.Identity
             catch (Exception ex)
             {
                 logger.LogError(ex, "An error occurrred confirming the email address.");
-                return InternalServerError();
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
             return NoContent();
         }
 
-        [HttpPut("/user/{userId}/confirm")]
-        public async Task<IActionResult> Confirm([FromRoute] string userId, UserConfirmModel confirmModel)
+        [HttpPut("{domain}/users/{userId}/confirm")]
+        public async Task<IActionResult> Confirm([FromRoute] string domain, [FromRoute] string userId, UserConfirmModel confirmModel)
         {
-            var localUserManager = userManager(Domain);
+            var localUserManager = userManager(domain);
             IdentityResult confirmResult = null;
             IdentityResult passwordSetResult = null;
 
@@ -292,9 +287,8 @@ namespace Ranger.Identity
             return confirmResult.Succeeded ? NoContent() : StatusCode(StatusCodes.Status304NotModified);
         }
 
-        [HttpGet("/user/{email}")]
-        [TenantDomainRequired]
-        public async Task<IActionResult> Index(string email)
+        [HttpGet("{domain}/users/{email}")]
+        public async Task<IActionResult> Index([FromRoute]string domain, [FromRoute] string email)
         {
             if (String.IsNullOrWhiteSpace(email))
             {
@@ -302,7 +296,7 @@ namespace Ranger.Identity
             }
 
 
-            var localUserManager = userManager(Domain);
+            var localUserManager = userManager(domain);
             var user = await localUserManager.FindByEmailAsync(email);
             if (user is null)
             {
@@ -312,11 +306,10 @@ namespace Ranger.Identity
             return Ok(MapUserToUserResponse(user, role.First()));
         }
 
-        [HttpGet("/user/{email}/role")]
-        [TenantDomainRequired]
-        public async Task<IActionResult> GetUserRole([FromRoute] string email)
+        [HttpGet("{domain}/users/{email}/role")]
+        public async Task<IActionResult> GetUserRole([FromRoute] string domain, [FromRoute] string email)
         {
-            var localUserManager = userManager(Domain);
+            var localUserManager = userManager(domain);
             var user = await localUserManager.FindByEmailAsync(email);
             if (user is null)
             {
@@ -326,9 +319,8 @@ namespace Ranger.Identity
             return Ok(new { role = role.First() });
         }
 
-        [HttpPut("/user/{username}/password-reset")]
-        [TenantDomainRequired]
-        public async Task<IActionResult> PutPasswordResetRequest([FromRoute] string username, PasswordResetModel passwordResetModel)
+        [HttpPut("{domain}/users/{username}/password-reset")]
+        public async Task<IActionResult> PutPasswordResetRequest([FromRoute] string domain, [FromRoute] string username, PasswordResetModel passwordResetModel)
         {
             if (String.IsNullOrWhiteSpace(username))
             {
@@ -336,7 +328,7 @@ namespace Ranger.Identity
             }
 
 
-            var localUserManager = userManager(Domain);
+            var localUserManager = userManager(domain);
 
 
             RangerUser user = null;
@@ -347,7 +339,7 @@ namespace Ranger.Identity
             catch (Exception ex)
             {
                 this.logger.LogError(ex, "An error occurred retrieving the user.");
-                return InternalServerError();
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
             if (user is null)
             {
@@ -357,7 +349,7 @@ namespace Ranger.Identity
             if (await localUserManager.CheckPasswordAsync(user, passwordResetModel.Password))
             {
                 var token = HttpUtility.UrlEncode(await localUserManager.GeneratePasswordResetTokenAsync(user));
-                _busPublisher.Send(new SendResetPasswordEmail(user.FirstName, username, Domain, user.Id, localUserManager.TenantOrganizationNameModel.OrganizationName, token), HttpContext.GetCorrelationContextFromHttpContext<SendResetPasswordEmail>(username));
+                _busPublisher.Send(new SendResetPasswordEmail(user.FirstName, username, domain, user.Id, localUserManager.TenantOrganizationNameModel.OrganizationName, token), HttpContext.GetCorrelationContextFromHttpContext<SendResetPasswordEmail>(domain, username));
                 return NoContent();
             }
             var apiErrorContent = new ApiErrorContent();
@@ -365,12 +357,10 @@ namespace Ranger.Identity
             return BadRequest(apiErrorContent);
         }
 
-        [HttpGet("/user/all")]
-        [TenantDomainRequired]
-        public async Task<IActionResult> All()
+        [HttpGet("{domain}/users")]
+        public async Task<IActionResult> All([FromRoute] string domain)
         {
-
-            var localUserManager = userManager(Domain);
+            var localUserManager = userManager(domain);
             var users = await localUserManager.Users.OrderBy(_ => _.LastName).ToListAsync();
             if (users is null)
             {

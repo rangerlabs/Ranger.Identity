@@ -25,12 +25,6 @@ namespace Ranger.Identity
             this.tenantsClient = tenantsClient;
             this.httpContextAccessor = httpContextAccessor;
         }
-
-        public (DbContextOptions<RangerIdentityDbContext> options, TenantOrganizationNameModel databaseUsername) GetDbContextOptionsFromHeader()
-        {
-            return getDbContextOptions(httpContextAccessor.HttpContext.Request.Headers["x-ranger-domain"].First());
-        }
-
         public (DbContextOptions<RangerIdentityDbContext> options, TenantOrganizationNameModel databaseUsername) GetDbContextOptions(string tenant) => getDbContextOptions(tenant);
 
         private (DbContextOptions<RangerIdentityDbContext> options, TenantOrganizationNameModel databaseUsername) getDbContextOptions(string tenant)
