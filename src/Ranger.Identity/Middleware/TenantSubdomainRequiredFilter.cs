@@ -36,7 +36,9 @@ namespace Ranger.Identity
                         }
                         else
                         {
-                            context.Result = new ForbidResult($"The tenant for the provided subdomain is not enabled '{domain}'. Ensure the domain has been confirmed.");
+                            context.Result = new RedirectResult($"https://{GlobalConfig.RedirectHost}/enter-domain");
+                            // TODO: give info that the domain is not enabled
+                            // context.Result = new ForbidResult($"The tenant for the provided subdomain is not enabled '{domain}'. Ensure the domain has been confirmed.");
                             return;
                         }
                     }
