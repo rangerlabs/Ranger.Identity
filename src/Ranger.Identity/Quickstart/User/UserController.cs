@@ -101,6 +101,7 @@ namespace Ranger.Identity
             }
 
             await localUserManager.DeleteAsync(user);
+            _busPublisher.Send(new DecrementResourceCount(domain, ResourceEnum.Account), CorrelationContext.Empty);
             return NoContent();
         }
 
@@ -130,6 +131,7 @@ namespace Ranger.Identity
             }
 
             await localUserManager.DeleteAsync(user);
+            _busPublisher.Send(new DecrementResourceCount(domain, ResourceEnum.Account), CorrelationContext.Empty);
             return NoContent();
         }
 
