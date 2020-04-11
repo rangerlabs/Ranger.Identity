@@ -95,20 +95,22 @@ namespace Ranger.Identity
 
         public static IEnumerable<Client> GetClients()
         {
-            var tenantsHttpClient = new Client
+            var clients = new List<Client>();
+            clients.Add(new Client
             {
                 ClientId = "TenantsHttpClient",
                 ClientName = "TenantsHttpClient",
                 AccessTokenLifetime = 1800, //30 minutes
                 AllowedGrantTypes = GrantTypes.ClientCredentials,
                 ClientSecrets = {
-                    new Secret ("cKprgh9wYKWcsm".Sha256 ()),
-                },
+                        new Secret ("cKprgh9wYKWcsm".Sha256 ()),
+                    },
                 AllowedScopes = {
-                    "tenantsApi",
-                }
-            };
-            var identityHttpClient = new Client
+                        "tenantsApi",
+                    }
+            });
+
+            clients.Add(new Client
             {
                 ClientId = "IdentityHttpClient",
                 ClientName = "IdentityHttpClient",
@@ -120,8 +122,8 @@ namespace Ranger.Identity
                 AllowedScopes = {
                     IdentityServerConstants.LocalApi.ScopeName,
                 }
-            };
-            var projectsHttpClient = new Client
+            });
+            clients.Add(new Client
             {
                 ClientId = "ProjectsHttpClient",
                 ClientName = "ProjectsHttpClient",
@@ -134,8 +136,8 @@ namespace Ranger.Identity
                 AllowedScopes = {
                     "projectsApi",
                 }
-            };
-            var integrationsHttpClient = new Client
+            });
+            clients.Add(new Client
             {
                 ClientId = "IntegrationsHttpClient",
                 ClientName = "IntegrationsHttpClient",
@@ -147,8 +149,8 @@ namespace Ranger.Identity
                 AllowedScopes = {
                     "integrationsApi",
                 }
-            };
-            var geofencesHttpClient = new Client
+            });
+            clients.Add(new Client
             {
                 ClientId = "GeofencesHttpClient",
                 ClientName = "GeofencesHttpClient",
@@ -160,8 +162,8 @@ namespace Ranger.Identity
                 AllowedScopes = {
                     "geofencesApi",
                 }
-            };
-            var breadcrumbsHttpClient = new Client
+            });
+            clients.Add(new Client
             {
                 ClientId = "BreadcrumbsHttpClient",
                 ClientName = "BreadcrumbsHttpClient",
@@ -173,8 +175,8 @@ namespace Ranger.Identity
                 AllowedScopes = {
                     "breadcrumbsApi",
                 }
-            };
-            var subscriptionsHttpClient = new Client
+            });
+            clients.Add(new Client
             {
                 ClientId = "SubscriptionsHttpClient ",
                 ClientName = "SubscriptionsHttpClient ",
@@ -186,8 +188,8 @@ namespace Ranger.Identity
                 AllowedScopes = {
                     "subscriptionsApi"
                 }
-            };
-            var reactClient = new Client
+            });
+            clients.Add(new Client
             {
                 ClientId = "react",
                 ClientName = "ReactClient",
@@ -204,11 +206,11 @@ namespace Ranger.Identity
                 IdentityServerConstants.StandardScopes.Profile,
                 "apiGateway"
                 },
-            };
+            });
 
             if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != Environments.Production)
             {
-                var postmanClient = new Client
+                clients.Add(new Client
                 {
                     ClientId = "postman",
                     ClientName = "PostmanClient",
@@ -233,29 +235,21 @@ namespace Ranger.Identity
                 },
 
                     AllowedScopes = {
-                    IdentityServerConstants.StandardScopes.OpenId,
-                    IdentityServerConstants.LocalApi.ScopeName,
-                    IdentityServerConstants.StandardScopes.Profile,
-                    "apiGateway",
-                    "tenantsApi",
-                    "projectsApi",
-                    "integrationsApi",
-                    "geofencesApi",
-                    "breadcrumbsApi",
-                    "subscriptionsApi"
-                }
-                };
+                        IdentityServerConstants.StandardScopes.OpenId,
+                        IdentityServerConstants.LocalApi.ScopeName,
+                        IdentityServerConstants.StandardScopes.Profile,
+                        "apiGateway",
+                        "tenantsApi",
+                        "projectsApi",
+                        "integrationsApi",
+                        "geofencesApi",
+                        "breadcrumbsApi",
+                        "subscriptionsApi"
+                    }
+                });
             }
 
-            return new List<Client>() {
-                reactClient,
-                tenantsHttpClient,
-                identityHttpClient,
-                projectsHttpClient,
-                integrationsHttpClient,
-                geofencesHttpClient,
-                breadcrumbsHttpClient,
-                subscriptionsHttpClient };
+            return clients;
         }
     }
 }

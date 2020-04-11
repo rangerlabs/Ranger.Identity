@@ -26,7 +26,7 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Ranger.AutoWrapper;
+using Ranger.ApiUtilities;
 
 namespace Ranger.Identity
 {
@@ -53,7 +53,10 @@ namespace Ranger.Identity
             });
 
             services.AddAutoWrapper();
-            services.AddSwaggerGen("Identity API", "v1");
+            if (Environment.IsDevelopment())
+            {
+                services.AddSwaggerGen("Identity API", "v1");
+            }
 
             services.AddTenantsHttpClient("http://tenants:8082", "tenantsApi", "cKprgh9wYKWcsm");
             services.AddProjectsHttpClient("http://projects:8086", "projectsApi", "usGwT8Qsp4La2");
@@ -99,39 +102,39 @@ namespace Ranger.Identity
                 .AddDefaultTokenProviders();
 
             var identityServerBuilder = services.AddIdentityServer(options =>
-            {
-                options.Events.RaiseErrorEvents = true;
-                options.Events.RaiseInformationEvents = true;
-                options.Events.RaiseFailureEvents = true;
-                options.Events.RaiseSuccessEvents = true;
-                if (Environment.IsDevelopment())
                 {
-                    options.IssuerUri = $"http://localhost.io:5000";
-                }
-                else
-                {
-                    options.IssuerUri = $"https://rangerlabs.io";
-                }
-            })
-                .AddAspNetIdentity<RangerUser>()
-                .AddRedirectUriValidator<MultitenantRedirectUriValidator>()
-                .AddProfileService<ApplicationUserProfileService>()
-                .AddConfigurationStore(options =>
-                {
-                    options.ConfigureDbContext = builder =>
+                    options.Events.RaiseErrorEvents = true;
+                    options.Events.RaiseInformationEvents = true;
+                    options.Events.RaiseFailureEvents = true;
+                    options.Events.RaiseSuccessEvents = true;
+                    if (Environment.IsDevelopment())
                     {
-                        builder.UseNpgsql(configuration["cloudSql:ConnectionString"]);
-                    };
+                        options.IssuerUri = $"http://localhost.io:5000";
+                    }
+                    else
+                    {
+                        options.IssuerUri = $"https://rangerlabs.io";
+                    }
                 })
-                .AddOperationalStore(options =>
-                {
-                    options.ConfigureDbContext = builder =>
+                    .AddAspNetIdentity<RangerUser>()
+                    .AddRedirectUriValidator<MultitenantRedirectUriValidator>()
+                    .AddProfileService<ApplicationUserProfileService>()
+                    .AddConfigurationStore(options =>
                     {
-                        builder.UseNpgsql(configuration["cloudSql:ConnectionString"]);
-                    };
-                    options.EnableTokenCleanup = true;
-                    options.TokenCleanupInterval = 60;
-                });
+                        options.ConfigureDbContext = builder =>
+                        {
+                            builder.UseNpgsql(configuration["cloudSql:ConnectionString"]);
+                        };
+                    })
+                    .AddOperationalStore(options =>
+                    {
+                        options.ConfigureDbContext = builder =>
+                        {
+                            builder.UseNpgsql(configuration["cloudSql:ConnectionString"]);
+                        };
+                        options.EnableTokenCleanup = true;
+                        options.TokenCleanupInterval = 60;
+                    });
 
             identityServerBuilder.AddSigningCredential(new X509Certificate2(configuration["IdentitySigningCertPath:Path"]));
             identityServerBuilder.AddValidationKey(new X509Certificate2(configuration["IdentityValidationCertPath:Path"]));
@@ -214,7 +217,10 @@ namespace Ranger.Identity
                 ;
 
             app.UsePathBase("/auth");
-            app.UseSwagger("v1", "Identity API");
+            if (Environment.IsDevelopment())
+            {
+                app.UseSwagger("v1", "Identity API");
+            }
             app.UseAutoWrapper();
             app.UseStaticFiles();
             app.UseRouting();
