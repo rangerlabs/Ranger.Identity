@@ -29,7 +29,7 @@ namespace IdentityServer4.Quickstart.UI
         }
 
         /// <summary>
-        /// Entry point into the login workflow
+        /// Return password reset view
         /// </summary>
         [HttpGet("/PasswordReset")]
         public async Task<IActionResult> PasswordReset()

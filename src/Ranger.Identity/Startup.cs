@@ -55,9 +55,9 @@ namespace Ranger.Identity
             services.AddAutoWrapper();
             services.AddSwaggerGen("Identity API", "v1");
 
-            services.AddTenantsHttpClient("http://tenants:8082", "tenantsApi", "");
-            services.AddProjectsHttpClient("http://projects:8086", "projectsApi", "");
-            services.AddSubscriptionsHttpClient("http://subscriptions:8089", "subscriptionsApi", "");
+            services.AddTenantsHttpClient("http://tenants:8082", "tenantsApi", "cKprgh9wYKWcsm");
+            services.AddProjectsHttpClient("http://projects:8086", "projectsApi", "usGwT8Qsp4La2");
+            services.AddSubscriptionsHttpClient("http://subscriptions:8089", "subscriptionsApi", "4T3SXqXaD6GyGHn4RY");
 
             services.AddDbContext<RangerIdentityDbContext>(options =>
             {
@@ -147,6 +147,7 @@ namespace Ranger.Identity
         public void ConfigureContainer(ContainerBuilder builder)
         {
             builder.RegisterType<RangerIdentityDbContext>().AsSelf().InstancePerRequest();
+            builder.RegisterType<RangerIdentityDbContext>().AsSelf().InstancePerDependency();
             builder.RegisterType<TenantServiceRangerIdentityDbContext>();
             builder.RegisterInstance<CloudSqlOptions>(configuration.GetOptions<CloudSqlOptions>("cloudSql"));
             builder.Register((c, p) =>
@@ -213,9 +214,9 @@ namespace Ranger.Identity
                 ;
 
             app.UsePathBase("/auth");
-            app.UseStaticFiles();
             app.UseSwagger("v1", "Identity API");
             app.UseAutoWrapper();
+            app.UseStaticFiles();
             app.UseRouting();
             app.UseIdentityServer();
             app.UseAuthorization();
