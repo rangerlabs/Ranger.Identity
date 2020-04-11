@@ -6,12 +6,12 @@ namespace Ranger.Identity
     [MessageNamespaceAttribute("identity")]
     public class NewPrimaryOwnerCreated : IEvent
     {
-        public NewPrimaryOwnerCreated(string email, string firstName, string lastName, string tenantDomain, string role)
+        public NewPrimaryOwnerCreated(string email, string firstName, string lastName, string tenantId, string role)
         {
             this.Email = email;
             this.FirstName = firstName;
             this.LastName = lastName;
-            this.TenantDomain = tenantDomain;
+            this.TenantId = tenantId;
             this.Role = role;
 
         }
@@ -21,7 +21,7 @@ namespace Ranger.Identity
 
         public string LastName { get; }
 
-        public string TenantDomain { get; }
+        public string TenantId { get; }
 
         public string Role { get; }
     }

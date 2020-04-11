@@ -6,16 +6,16 @@ namespace Ranger.Identity
     [MessageNamespace("identity")]
     public class UpdateUserRole : ICommand
     {
-        public string Domain { get; }
+        public string TenantId { get; }
         public string Email { get; }
         public string CommandingUserEmail { get; }
         public string Role { get; }
 
-        public UpdateUserRole(string domain, string email, string commandingUserEmail, string role = "")
+        public UpdateUserRole(string tenantId, string email, string commandingUserEmail, string role = "")
         {
-            if (string.IsNullOrWhiteSpace(domain))
+            if (string.IsNullOrWhiteSpace(tenantId))
             {
-                throw new System.ArgumentException($"{nameof(domain)} was null or whitespace.");
+                throw new System.ArgumentException($"{nameof(tenantId)} was null or whitespace.");
             }
 
             if (string.IsNullOrWhiteSpace(email))
@@ -28,7 +28,7 @@ namespace Ranger.Identity
                 throw new System.ArgumentException($"{nameof(commandingUserEmail)} was null or whitespace.");
             }
 
-            this.Domain = domain;
+            this.TenantId = tenantId;
             this.Email = email;
             this.CommandingUserEmail = commandingUserEmail;
             this.Role = role;

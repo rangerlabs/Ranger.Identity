@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
+using AutoWrapper.Wrappers;
 using IdentityServer4;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -22,359 +23,500 @@ namespace Ranger.Identity
     [Authorize(IdentityServerConstants.LocalApi.PolicyName)]
     public class UsersController : ControllerBase
     {
-        private readonly Func<string, RangerUserManager> userManager;
+        private readonly Func<bool, string, RangerUserManager> userManager;
+        private readonly SubscriptionsHttpClient subscriptionsClient;
         private readonly SignInManager<RangerUser> signInManager;
         private readonly IBusPublisher _busPublisher;
-        private readonly ITenantsClient _tenantsClient;
+        private readonly TenantsHttpClient _tenantsClient;
         private readonly ILogger<UsersController> logger;
 
         public UsersController(
                 IBusPublisher busPublisher,
-                Func<string, RangerUserManager> userManager,
+                Func<bool, string, RangerUserManager> userManager,
+                SubscriptionsHttpClient subscriptionsClient,
                 SignInManager<RangerUser> signInManager,
-                ITenantsClient tenantsClient,
+                TenantsHttpClient tenantsClient,
                 ILogger<UsersController> logger
             )
         {
             this._busPublisher = busPublisher;
             this.userManager = userManager;
+            this.subscriptionsClient = subscriptionsClient;
             this.signInManager = signInManager;
             this._tenantsClient = tenantsClient;
             this.logger = logger;
         }
 
-        [HttpPut("{domain}/users/{username}")]
-        public async Task<IActionResult> AccountUpdate([FromRoute] string domain, [FromRoute] string username, AccountUpdateModel accountInfoModel)
+        ///<summary>
+        /// Updates a user or account
+        ///</summary>
+        ///<param name="tenantId">The tenant id the user is associated with<param>
+        ///<param name="email">The email of the user to update<param>
+        ///<param name="accountInfoModel">The model necessary to update the account<param>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HttpPut("/users/{tenantId}/{email}")]
+        public async Task<ApiResponse> UserAndAccountUpdate(string tenantId, string email, AccountUpdateModel accountInfoModel)
         {
-            var localUserManager = userManager(domain);
+            var localUserManager = userManager(false, tenantId);
             RangerUser user = null;
             try
             {
-                user = await localUserManager.FindByEmailAsync(username);
-
+                user = await localUserManager.FindByEmailAsync(email);
             }
             catch (Exception ex)
             {
                 this.logger.LogError(ex, "An error occurred retrieving the user.");
-                return StatusCode(StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to update account", statusCode: StatusCodes.Status500InternalServerError);
             }
             if (user is null)
             {
-                return NotFound();
+                return new ApiResponse("No user was found for the proivded email", statusCode: StatusCodes.Status404NotFound);
             }
             user.LastName = accountInfoModel.LastName;
             user.FirstName = accountInfoModel.FirstName;
             var result = await localUserManager.UpdateAsync(user);
             if (!result.Succeeded)
             {
-                logger.LogError($"Failed to update user {username}. Errors: {String.Join(';', result.Errors.Select(_ => _.Description).ToList())}.");
-                return StatusCode(StatusCodes.Status500InternalServerError);
+                logger.LogError($"Failed to update user {email}. Errors: {String.Join(';', result.Errors.Select(_ => _.Description).ToList())}.");
+                throw new ApiException("Failed to update account", statusCode: StatusCodes.Status500InternalServerError);
             }
-            return Ok();
+            return new ApiResponse("Success");
         }
 
-        [HttpDelete("{domain}/users/{email}/account")]
-        public async Task<IActionResult> DeleteAccount([FromRoute] string domain, [FromRoute] string email, AccountDeleteModel accountDeleteModel)
+        ///<summary>
+        /// Deletes a user's account
+        ///</summary>
+        ///<param name="tenantId">The tenant id the user is associated with<param>
+        ///<param name="email">The email of the user to delete<param>
+        ///<param name="accountDeleteModel">The model necessary to delete the account<param>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HttpDelete("/users/{tenantId}/{email}/account")]
+        public async Task<ApiResponse> DeleteAccount(string tenantId, [FromRoute] string email, AccountDeleteModel accountDeleteModel)
         {
-            var localUserManager = userManager(domain);
-            RangerUser user = null;
-            try
+            var apiResponse = await subscriptionsClient.DecrementResource(tenantId, ResourceEnum.Account);
+            if (!apiResponse.IsError)
             {
-                user = await localUserManager.FindByEmailAsync(email);
-                var result = await localUserManager.CheckPasswordAsync(user, accountDeleteModel.Password);
-                if (!result)
+                var localUserManager = userManager(false, tenantId);
+                RangerUser user = null;
+                try
                 {
-                    var apiErrorContent = new ApiErrorContent();
-                    apiErrorContent.Errors.Add("The password was invalid.");
-                    return BadRequest(apiErrorContent);
+                    user = await localUserManager.FindByEmailAsync(email);
+                    var result = await localUserManager.CheckPasswordAsync(user, accountDeleteModel.Password);
+                    if (!result)
+                    {
+                        var message = "The password provided was invalid";
+                        logger.LogDebug(message);
+                        return new ApiResponse(message, statusCode: StatusCodes.Status400BadRequest);
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                this.logger.LogError(ex, "An error occurred retrieving the user or users roles.");
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
-
-            if (user is null)
-            {
-                return NotFound();
-            }
-
-            await localUserManager.DeleteAsync(user);
-            _busPublisher.Send(new DecrementResourceCount(domain, ResourceEnum.Account), CorrelationContext.Empty);
-            return NoContent();
-        }
-
-        [HttpDelete("{domain}/users/{email}")]
-        public async Task<IActionResult> DeleteUserByEmail([FromRoute] string domain, [FromRoute] string email, DeleteUserModel deleteUserModel)
-        {
-            var localUserManager = userManager(domain);
-            RangerUser user = null;
-            try
-            {
-                user = await localUserManager.FindByEmailAsync(email);
-                var commandingUser = (await localUserManager.FindByEmailAsync(deleteUserModel.CommandingUserEmail));
-                if (!await AssignmentValidator.ValidateAsync(commandingUser, user, localUserManager))
+                catch (Exception ex)
                 {
-                    return Forbid();
+                    this.logger.LogError(ex, "An error occurred retrieving the user or users roles.");
+                    throw new ApiException("Failed to delete account", statusCode: StatusCodes.Status500InternalServerError);
                 }
-            }
-            catch (Exception ex)
-            {
-                this.logger.LogError(ex, "An error occurred retrieving the user or users roles.");
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
 
-            if (user is null)
-            {
-                return NotFound();
+                var deleteResult = await localUserManager.DeleteAsync(user);
+                if (!deleteResult.Succeeded)
+                {
+                    logger.LogError($"Failed to delete account {email}. Errors: {String.Join(';', deleteResult.Errors.Select(_ => _.Description).ToList())}.");
+                    throw new ApiException("Failed to update account", statusCode: StatusCodes.Status500InternalServerError);
+                }
+                return new ApiResponse("Success");
             }
-
-            await localUserManager.DeleteAsync(user);
-            _busPublisher.Send(new DecrementResourceCount(domain, ResourceEnum.Account), CorrelationContext.Empty);
-            return NoContent();
+            throw new ApiException(apiResponse.ResponseException.ExceptionMessage.Error, statusCode: apiResponse.StatusCode);
         }
 
-        [HttpPut("{domain}/users/{username}/email-change")]
-        public async Task<IActionResult> PutEmailChangeRequest([FromRoute] string domain, [FromRoute] string username, EmailChangeModel emailChangeModel)
+        ///<summary>
+        /// Deletes a user by email address
+        ///</summary>
+        ///<param name="tenantId">The tenant id the user is associated with<param>
+        ///<param name="email">The email of the user to delete<param>
+        ///<param name="deleteUserModel">The model necessary to delete the user<param>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HttpDelete("/users/{tenantId}/{email}")]
+        public async Task<ApiResponse> DeleteUserByEmail(string tenantId, string email, DeleteUserModel deleteUserModel)
         {
-            var localUserManager = userManager(domain);
+            var apiResponse = await subscriptionsClient.DecrementResource(tenantId, ResourceEnum.Account);
+            if (!apiResponse.IsError)
+            {
+                var localUserManager = userManager(false, tenantId);
+                RangerUser user = null;
+                try
+                {
+                    user = await localUserManager.FindByEmailAsync(email);
+                    var commandingUser = (await localUserManager.FindByEmailAsync(deleteUserModel.CommandingUserEmail));
+                    if (!await AssignmentValidator.ValidateAsync(commandingUser, user, localUserManager))
+                    {
+                        this.logger.LogWarning("An attempt to delete a user was made from a forbidden commanding user");
+                        return new ApiResponse("You are forbidden from this action", StatusCodes.Status403Forbidden);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    this.logger.LogError(ex, "An error occurred retrieving the user or users roles.");
+                    throw new ApiException("Failed to delete user", statusCode: StatusCodes.Status500InternalServerError);
+                }
+                if (user is null)
+                {
+                    return new ApiResponse("No user was found for the proivded email", statusCode: StatusCodes.Status404NotFound);
+                }
+                var deleteResult = await localUserManager.DeleteAsync(user);
+                if (!deleteResult.Succeeded)
+                {
+                    logger.LogError($"Failed to delete user {email}. Errors: {String.Join(';', deleteResult.Errors.Select(_ => _.Description).ToList())}");
+                    throw new ApiException("Failed to delete user", statusCode: StatusCodes.Status500InternalServerError);
+                }
+                return new ApiResponse("Success");
+            }
+            throw new ApiException(apiResponse.ResponseException.ExceptionMessage.Error, statusCode: apiResponse.StatusCode);
+        }
+
+        ///<summary>
+        /// Initiates an email change request
+        ///</summary>
+        ///<param name="tenantId">The tenant id the user is associated with<param>
+        ///<param name="email">The email of the user who is requesting an email change<param>
+        ///<param name="emailChangeModel">The model necessary to change the user's email<param>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [HttpPut("/users/{tenantId}/{email}/email-change")]
+        public async Task<ApiResponse> PutEmailChangeRequest(string tenantId, string email, EmailChangeModel emailChangeModel)
+        {
+            var localUserManager = userManager(false, tenantId);
             RangerUser user = null;
             RangerUser conflictingUser = null;
             try
             {
-                user = await localUserManager.FindByEmailAsync(username);
+                user = await localUserManager.FindByEmailAsync(email);
                 conflictingUser = await localUserManager.FindByEmailAsync(emailChangeModel.Email);
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "An error occurred retrieving the user.");
-                return StatusCode(StatusCodes.Status500InternalServerError);
+                this.logger.LogError(ex, "An error occurred retrieving the users");
+                throw new ApiException("Failed to request email change", statusCode: StatusCodes.Status500InternalServerError);
             }
             if (user is null)
             {
-                return NotFound();
+                return new ApiResponse("No user was found for the proivded email", statusCode: StatusCodes.Status404NotFound);
             }
             if (conflictingUser != null)
             {
-                var apiErrorContent = new ApiErrorContent();
-                apiErrorContent.Errors.Add("The requested email address is unavailable.");
-                return Conflict();
+                var message = "The requested email address is unavailable";
+                logger.LogDebug(message);
+                return new ApiResponse(message, false, statusCode: StatusCodes.Status409Conflict);
             }
 
             user.UnconfirmedEmail = emailChangeModel.Email;
-            await localUserManager.UpdateAsync(user);
+            var updateResult = await localUserManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                logger.LogError($"Failed to request email change for user {email}. Errors: {String.Join(';', updateResult.Errors.Select(_ => _.Description).ToList())}");
+                throw new ApiException("Failed to request email change", statusCode: StatusCodes.Status500InternalServerError);
+            }
             var token = HttpUtility.UrlEncode(await localUserManager.GenerateChangeEmailTokenAsync(user, emailChangeModel.Email));
-            _busPublisher.Send(new SendChangeEmailEmail(user.FirstName, emailChangeModel.Email, domain, user.Id, localUserManager.TenantOrganizationNameModel.OrganizationName, token), HttpContext.GetCorrelationContextFromHttpContext<SendResetPasswordEmail>(domain, username));
-            return NoContent();
+            _busPublisher.Send(new SendChangeEmailEmail(user.FirstName, emailChangeModel.Email, tenantId, user.Id, localUserManager.contextTenant.OrganizationName, token), HttpContext.GetCorrelationContextFromHttpContext<SendResetPasswordEmail>(tenantId, email));
+            return new ApiResponse("Success", true);
         }
 
-        [HttpPost("{domain}/users/{userId}/password-reset")]
-        public async Task<IActionResult> PasswordReset([FromRoute] string domain, [FromRoute] string userId, UserConfirmPasswordResetModel userConfirmPasswordResetModel)
+        ///<summary>
+        /// Sets a user's new password
+        ///</summary>
+        ///<param name="tenantId">The tenant id the user is associated with<param>
+        ///<param name="email">The email of the user whose password should be changed<param>
+        ///<param name="userConfirmPasswordResetModel">The model necessary to change the user's password<param>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HttpPost("/users/{tenantId}/{email}/password-reset")]
+        public async Task<ApiResponse> PasswordReset(string tenantId, string email, UserConfirmPasswordResetModel userConfirmPasswordResetModel)
         {
-            var localUserManager = userManager(domain);
-            IdentityResult result = null;
+            var localUserManager = userManager(false, tenantId);
 
+            RangerUser user = null;
             try
             {
-                var user = await localUserManager.FindByIdAsync(userId);
-                try
-                {
-                    result = await localUserManager.ResetPasswordAsync(user, userConfirmPasswordResetModel.Token, userConfirmPasswordResetModel.NewPassword);
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, $"Failed to set password for user '{user.Email}'.");
-                    throw;
-                }
-                if (result.Succeeded)
-                {
-                    if (!user.EmailConfirmed)
-                    {
-                        user.EmailConfirmed = true;
-                        try
-                        {
-                            await localUserManager.UpdateAsync(user);
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.LogError(ex, $"Failed to mark user '{user.Email}' as confirmed.");
-                            throw;
-                        }
-                    }
-                    await localUserManager.UpdateSecurityStampAsync(user);
-                }
+                user = await localUserManager.FindByIdAsync(email);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                var apiErrorContent = new ApiErrorContent();
-                apiErrorContent.Errors.Add("An error occurrred setting the user's password.");
-                return Conflict(apiErrorContent);
+                this.logger.LogError(ex, "An error occurred retrieving the users");
+                throw new ApiException("Failed to set password", statusCode: StatusCodes.Status500InternalServerError);
             }
-            return result.Succeeded ? NoContent() : StatusCode(StatusCodes.Status304NotModified);
+
+            if (user is null)
+            {
+                return new ApiResponse("No user was found for the proivded email", false, statusCode: StatusCodes.Status404NotFound);
+            }
+
+            var resetResult = await localUserManager.ResetPasswordAsync(user, userConfirmPasswordResetModel.Token, userConfirmPasswordResetModel.NewPassword);
+            if (!resetResult.Succeeded)
+            {
+                logger.LogError($"Failed to set password for user {email}. Errors: {String.Join(';', resetResult.Errors.Select(_ => _.Description).ToList())}");
+                throw new ApiException("Failed to set password", statusCode: StatusCodes.Status500InternalServerError);
+            }
+
+            //TODO: Security implications
+            if (!user.EmailConfirmed)
+            {
+                user.EmailConfirmed = true;
+                var updateResult = await localUserManager.UpdateAsync(user);
+                if (!updateResult.Succeeded)
+                {
+                    logger.LogError($"Failed to confirm user {email} after setting password. Errors: {String.Join(';', resetResult.Errors.Select(_ => _.Description).ToList())}");
+                    throw new ApiException("Failed to confirm user", statusCode: StatusCodes.Status500InternalServerError);
+                }
+            }
+
+            var stampResult = await localUserManager.UpdateSecurityStampAsync(user);
+            if (!stampResult.Succeeded)
+            {
+                logger.LogError($"Failed to reset security stamp for user {email}. Errors: {String.Join(';', resetResult.Errors.Select(_ => _.Description).ToList())}");
+                throw new ApiException("Failed to update security stamp", statusCode: StatusCodes.Status500InternalServerError);
+            }
+            return new ApiResponse("Success", true);
         }
 
-        [HttpPost("{domain}/users/{userId}/email-change")]
-        public async Task<IActionResult> EmailChange([FromRoute] string domain, [FromRoute] string userId, UserConfirmEmailChangeModel userConfirmEmailChangeModel)
+        ///<summary>
+        /// Sets a user's new email
+        ///</summary>
+        ///<param name="tenantId">The tenant id the user is associated with<param>
+        ///<param name="email">The email of the user to confirm<param>
+        ///<param name="userConfirmEmailChangeModel">The model necessary to change the user's email<param>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [HttpPost("/users/{tenantId}/{email}/email-change")]
+        public async Task<ApiResponse> EmailChange(string tenantId, string email, UserConfirmEmailChangeModel userConfirmEmailChangeModel)
         {
-            var localUserManager = userManager(domain);
-
+            var localUserManager = userManager(false, tenantId);
+            RangerUser user = null;
             try
             {
-                var user = await localUserManager.FindByIdAsync(userId);
+                user = await localUserManager.FindByIdAsync(email);
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, "An error occurred retrieving the users");
+                throw new ApiException("Failed to set password", statusCode: StatusCodes.Status500InternalServerError);
+            }
 
-                if ((await localUserManager.ChangeEmailAsync(user, user.UnconfirmedEmail, userConfirmEmailChangeModel.Token)).Succeeded)
+            if (user is null)
+            {
+                return new ApiResponse("No user was found for the proivded email", false, statusCode: StatusCodes.Status404NotFound);
+            }
+
+            var changeResult = await localUserManager.ChangeEmailAsync(user, user.UnconfirmedEmail, userConfirmEmailChangeModel.Token);
+
+            if (!changeResult.Succeeded)
+            {
+                var message = "Ensure the provided current email and token are correct.";
+                logger.LogError(message);
+                return new ApiResponse(message, false, statusCode: StatusCodes.Status400BadRequest);
+            }
+
+            user.UserName = user.UnconfirmedEmail;
+            user.UnconfirmedEmail = "";
+            try
+            {
+                var updateResult = await localUserManager.UpdateAsync(user);
+                if (!updateResult.Succeeded)
                 {
-                    user.UserName = user.UnconfirmedEmail;
-                    user.UnconfirmedEmail = "";
-                    await localUserManager.UpdateAsync(user);
-                    await localUserManager.UpdateSecurityStampAsync(user);
-                }
-                else
-                {
-                    var apiErrorContent = new ApiErrorContent();
-                    apiErrorContent.Errors.Add("Ensure the provided current email and token are correct.");
-                    return BadRequest(apiErrorContent);
+                    logger.LogError($"Failed to confirm user {email}. Errors: {String.Join(';', updateResult.Errors.Select(_ => _.Description).ToList())}");
+                    throw new ApiException("Failed to confirm user", statusCode: StatusCodes.Status500InternalServerError);
                 }
             }
+            //TODO: Can this be determined from changeResult?
             catch (DbUpdateException ex)
             {
                 var postgresException = ex.InnerException as PostgresException;
                 if (postgresException.SqlState == "23505")
                 {
-                    var apiErrorContent = new ApiErrorContent();
-                    apiErrorContent.Errors.Add("The requested email is already in use.");
-                    return Conflict(apiErrorContent);
+                    var message = "The requested email is already in use.";
+                    return new ApiResponse(message, false, statusCode: StatusCodes.Status409Conflict);
                 }
-                throw;
+                throw new ApiException("Failed to update user email", statusCode: StatusCodes.Status500InternalServerError);
             }
-            catch (Exception ex)
+
+            var stampResult = await localUserManager.UpdateSecurityStampAsync(user);
+            if (!stampResult.Succeeded)
             {
-                logger.LogError(ex, "An error occurrred confirming the email address.");
-                return StatusCode(StatusCodes.Status500InternalServerError);
+                logger.LogError($"Failed to reset security stamp for user {email}. Errors: {String.Join(';', stampResult.Errors.Select(_ => _.Description).ToList())}");
+                throw new ApiException("Failed to update security stamp", statusCode: StatusCodes.Status500InternalServerError);
             }
-            return NoContent();
+            return new ApiResponse("Success", true);
         }
 
-        [HttpPut("{domain}/users/{userId}/confirm")]
-        public async Task<IActionResult> Confirm([FromRoute] string domain, [FromRoute] string userId, UserConfirmModel confirmModel)
+        ///<summary>
+        /// Confirms a new user
+        ///</summary>
+        ///<param name="tenantId">The tenant id the user is associated with<param>
+        ///<param name="email">The email of the user to confirm<param>
+        ///<param name="userConfirmEmailChangeModel">The model necessary to change the user's email<param>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HttpPut("/users/{tenantId}/{userId}/confirm")]
+        public async Task<ApiResponse> Confirm(string tenantId, string email, UserConfirmModel confirmModel)
         {
-            var localUserManager = userManager(domain);
-            IdentityResult confirmResult = null;
-            IdentityResult passwordSetResult = null;
-
+            var localUserManager = userManager(false, tenantId);
             try
             {
-                var user = await localUserManager.FindByIdAsync(userId);
-                confirmResult = await localUserManager.ConfirmEmailAsync(user, confirmModel.Token);
-                if (confirmResult.Succeeded)
+                var user = await localUserManager.FindByIdAsync(email);
+                if (user is null)
                 {
-                    passwordSetResult = await localUserManager.ChangePasswordAsync(user, GlobalConfig.TempPassword, confirmModel.NewPassword);
-                    if (!passwordSetResult.Succeeded)
-                    {
-                        logger.LogError($"Failed to set password for user '{user.Email}' after confirming their account.");
-                    }
+                    return new ApiResponse("No user was found for the proivded email", statusCode: StatusCodes.Status404NotFound);
                 }
-            }
-            catch (Exception)
-            {
-                var apiErrorContent = new ApiErrorContent();
-                apiErrorContent.Errors.Add("An error occurrred confirming the email address.");
-                return Conflict(apiErrorContent);
-            }
-            if (confirmResult.Succeeded && !passwordSetResult.Succeeded)
-            {
 
-            }
-            return confirmResult.Succeeded ? NoContent() : StatusCode(StatusCodes.Status304NotModified);
-        }
+                var confirmResult = await localUserManager.ConfirmEmailAsync(user, confirmModel.Token);
+                if (!confirmResult.Succeeded)
+                {
+                    var message = "Ensure the provided current email and token are correct.";
+                    logger.LogError($"{message} Errors: {String.Join(';', confirmResult.Errors.Select(_ => _.Description).ToList())}");
+                    return new ApiResponse(message, false, statusCode: StatusCodes.Status400BadRequest);
+                }
 
-        [HttpGet("{domain}/users/{email}")]
-        public async Task<IActionResult> Index([FromRoute]string domain, [FromRoute] string email)
-        {
-            if (String.IsNullOrWhiteSpace(email))
-            {
-                return BadRequest(new { errors = $"{nameof(email)} cannot be null or empty." });
-            }
-
-
-            var localUserManager = userManager(domain);
-            var user = await localUserManager.FindByEmailAsync(email);
-            if (user is null)
-            {
-                return NotFound();
-            }
-            var role = await localUserManager.GetRolesAsync(user);
-            return Ok(MapUserToUserResponse(user, role.First()));
-        }
-
-        [HttpGet("{domain}/users/{email}/role")]
-        public async Task<IActionResult> GetUserRole([FromRoute] string domain, [FromRoute] string email)
-        {
-            var localUserManager = userManager(domain);
-            var user = await localUserManager.FindByEmailAsync(email);
-            if (user is null)
-            {
-                return NotFound();
-            }
-            var role = await localUserManager.GetRolesAsync(user);
-            return Ok(new { role = role.First() });
-        }
-
-        [HttpPut("{domain}/users/{username}/password-reset")]
-        public async Task<IActionResult> PutPasswordResetRequest([FromRoute] string domain, [FromRoute] string username, PasswordResetModel passwordResetModel)
-        {
-            if (String.IsNullOrWhiteSpace(username))
-            {
-                return BadRequest(new { errors = $"{nameof(username)} cannot be null or empty." });
-            }
-
-
-            var localUserManager = userManager(domain);
-
-
-            RangerUser user = null;
-            try
-            {
-                user = await localUserManager.FindByEmailAsync(username);
+                var passwordSetResult = await localUserManager.ChangePasswordAsync(user, GlobalConfig.TempPassword, confirmModel.NewPassword);
+                if (!passwordSetResult.Succeeded)
+                {
+                    logger.LogError($"Failed to set password for user '{user.Email}' after confirming their account. Errors: {String.Join(';', passwordSetResult.Errors.Select(_ => _.Description).ToList())}");
+                    throw new ApiException("The email address was confirmed, but failed to set password", statusCode: StatusCodes.Status500InternalServerError);
+                }
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "An error occurred retrieving the user.");
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
-            if (user is null)
-            {
-                return NotFound();
+                this.logger.LogError(ex, "An error occurred confirming the email address");
+                throw new ApiException("Failed to confirm email address", statusCode: StatusCodes.Status500InternalServerError);
             }
 
-            if (await localUserManager.CheckPasswordAsync(user, passwordResetModel.Password))
-            {
-                var token = HttpUtility.UrlEncode(await localUserManager.GeneratePasswordResetTokenAsync(user));
-                _busPublisher.Send(new SendResetPasswordEmail(user.FirstName, username, domain, user.Id, localUserManager.TenantOrganizationNameModel.OrganizationName, token), HttpContext.GetCorrelationContextFromHttpContext<SendResetPasswordEmail>(domain, username));
-                return NoContent();
-            }
-            var apiErrorContent = new ApiErrorContent();
-            apiErrorContent.Errors.Add("The password provided is invalid.");
-            return BadRequest(apiErrorContent);
+            return new ApiResponse("Success", true);
         }
 
-        [HttpGet("{domain}/users")]
-        public async Task<IActionResult> All([FromRoute] string domain)
+        ///<summary>
+        /// Gets a user
+        ///</summary>
+        ///<param name="tenantId">The tenant id the user is associated with<param>
+        ///<param name="email">The email of the user to delete<param>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HttpGet("/users/{tenantId}/{email}")]
+        public async Task<ApiResponse> Index(string tenantId, string email)
         {
-            var localUserManager = userManager(domain);
-            var users = await localUserManager.Users.OrderBy(_ => _.LastName).ToListAsync();
-            if (users is null)
+            try
             {
-                return NoContent();
-            }
-            var userResponse = new List<UserResponseModel>();
-            foreach (var user in users)
-            {
+                var localUserManager = userManager(false, tenantId);
+                var user = await localUserManager.FindByEmailAsync(email);
+                if (user is null)
+                {
+                    return new ApiResponse("No user was found for the proivded email", statusCode: StatusCodes.Status404NotFound);
+                }
                 var role = await localUserManager.GetRolesAsync(user);
-                userResponse.Add(MapUserToUserResponse(user, role.First()));
+                return new ApiResponse("Success", MapUserToUserResponse(user, role.First()));
             }
-            return Ok(userResponse);
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, "An error occurred getting a user");
+                throw new ApiException("Failed to get user", statusCode: StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        ///<summary>
+        /// Gets a user's role
+        ///</summary>
+        ///<param name="tenantId">The tenant id the user is associated with<param>
+        ///<param name="email">The email of the user to delete<param>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HttpGet("/users/{tenantId}/{email}/role")]
+        public async Task<ApiResponse> GetUserRole(string tenantId, string email)
+        {
+            try
+            {
+                var localUserManager = userManager(false, tenantId);
+                var user = await localUserManager.FindByEmailAsync(email);
+                if (user is null)
+                {
+                    return new ApiResponse("No user was found for the proivded email", statusCode: StatusCodes.Status404NotFound);
+                }
+                var role = await localUserManager.GetRolesAsync(user);
+                return new ApiResponse("Success", role.First());
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, "An error occurred getting a user role");
+                throw new ApiException("Failed to get user role", statusCode: StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        ///<summary>
+        /// Initiates an email change request
+        ///</summary>
+        ///<param name="tenantId">The tenant id the user is associated with<param>
+        ///<param name="email">The email of the user who is requesting a password reset<param>
+        ///<param name="passwordResetModel">The model necessary to reset the user's password<param>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status304NotModified)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HttpPut("/users/{tenantId}/{email}/password-reset")]
+        public async Task<ApiResponse> PutPasswordResetRequest(string tenantId, string email, PasswordResetModel passwordResetModel)
+        {
+            try
+            {
+                var localUserManager = userManager(false, tenantId);
+                var user = await localUserManager.FindByEmailAsync(email);
+                if (user is null)
+                {
+                    return new ApiResponse("No user was found for the proivded email", statusCode: StatusCodes.Status404NotFound);
+                }
+                if (await localUserManager.CheckPasswordAsync(user, passwordResetModel.Password))
+                {
+                    var token = HttpUtility.UrlEncode(await localUserManager.GeneratePasswordResetTokenAsync(user));
+                    _busPublisher.Send(new SendResetPasswordEmail(user.FirstName, email, tenantId, user.Id, localUserManager.contextTenant.OrganizationName, token), HttpContext.GetCorrelationContextFromHttpContext<SendResetPasswordEmail>(tenantId, email));
+                    return new ApiResponse("Success", true);
+                }
+                var message = "The password provided was invalid";
+                logger.LogDebug(message);
+                return new ApiResponse(message, false, statusCode: StatusCodes.Status400BadRequest);
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, "An error occurred getting a user role");
+                throw new ApiException("Failed to get user role", statusCode: StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        ///<summary>
+        /// Gets all users for a tenant
+        ///</summary>
+        ///<param name="tenantId">The tenant id to retrieve users for<param>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [HttpGet("/users/{tenantId}")]
+        public async Task<ApiResponse> All(string tenantId)
+        {
+            try
+            {
+                var localUserManager = userManager(false, tenantId);
+                var users = await localUserManager.Users.OrderBy(_ => _.LastName).ToListAsync();
+                var userResponse = new List<UserResponseModel>();
+                foreach (var user in users)
+                {
+                    var role = await localUserManager.GetRolesAsync(user);
+                    userResponse.Add(MapUserToUserResponse(user, role.First()));
+                }
+                return new ApiResponse("Success", userResponse);
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, "An error occurred getting a user role");
+                throw new ApiException("Failed to get user role", statusCode: StatusCodes.Status500InternalServerError);
+            }
         }
 
         [NonAction]

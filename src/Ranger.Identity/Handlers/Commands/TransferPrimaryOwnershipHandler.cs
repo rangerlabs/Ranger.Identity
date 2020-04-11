@@ -11,12 +11,12 @@ namespace Ranger.Identity.Handlers.Commands
     public class TransferPrimaryOwnershipHandler : ICommandHandler<TransferPrimaryOwnership>
     {
         private readonly IBusPublisher busPublisher;
-        private readonly Func<string, RangerUserManager> userManager;
+        private readonly Func<bool, string, RangerUserManager> userManager;
         private readonly ILogger<TransferPrimaryOwnership> logger;
 
         public TransferPrimaryOwnershipHandler(
             IBusPublisher busPublisher,
-            Func<string, RangerUserManager> userManager,
+            Func<bool, string, RangerUserManager> userManager,
             ILogger<TransferPrimaryOwnership> logger
         )
         {
@@ -27,11 +27,11 @@ namespace Ranger.Identity.Handlers.Commands
 
         public async Task HandleAsync(TransferPrimaryOwnership message, ICorrelationContext context)
         {
-            logger.LogInformation($"Transfering Primary Ownership of domain '{message.Domain}' from '{message.CommandingUserEmail}' to '{message.TransferUserEmail}'");
+            logger.LogInformation($"Transfering Primary Ownership of domain '{message.TenantId}' from '{message.CommandingUserEmail}' to '{message.TransferUserEmail}'");
             try
             {
 
-                var localUserManager = userManager(message.Domain);
+                var localUserManager = userManager(false, message.TenantId);
 
                 var commandingUser = await localUserManager.FindByEmailAsync(message.CommandingUserEmail);
                 var transferUser = await localUserManager.FindByEmailAsync(message.TransferUserEmail);

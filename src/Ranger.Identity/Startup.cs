@@ -26,6 +26,7 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Ranger.AutoWrapper;
 
 namespace Ranger.Identity
 {
@@ -51,20 +52,18 @@ namespace Ranger.Identity
                 options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
             });
 
-            services.AddSingleton<ITenantsClient, TenantsClient>(provider =>
-            {
-                return new TenantsClient("http://tenants:8082", provider.GetService<ILogger<TenantsClient>>());
-            });
-            services.AddSingleton<IProjectsClient, ProjectsClient>(provider =>
-            {
-                return new ProjectsClient("http://projects:8086", provider.GetService<ILogger<ProjectsClient>>());
-            });
+            services.AddAutoWrapper();
+            services.AddSwaggerGen("Identity API", "v1");
+
+            services.AddTenantsHttpClient("http://tenants:8082", "tenantsApi", "");
+            services.AddProjectsHttpClient("http://projects:8086", "projectsApi", "");
+            services.AddSubscriptionsHttpClient("http://subscriptions:8089", "subscriptionsApi", "");
 
             services.AddDbContext<RangerIdentityDbContext>(options =>
             {
                 options.UseNpgsql(configuration["cloudSql:ConnectionString"]);
             });
-            services.AddEntityFrameworkNpgsql().AddDbContext<ConfigurationDbContext>((serviceProvider, options) =>
+            services.AddDbContext<ConfigurationDbContext>((serviceProvider, options) =>
             {
                 options.UseNpgsql(configuration["cloudSql:ConnectionString"], npgsqlOptions =>
                 {
@@ -72,7 +71,7 @@ namespace Ranger.Identity
                     npgsqlOptions.MigrationsAssembly(migrationsAssembly);
                 });
             });
-            services.AddEntityFrameworkNpgsql().AddDbContext<PersistedGrantDbContext>((serviceProvider, options) =>
+            services.AddDbContext<PersistedGrantDbContext>((serviceProvider, options) =>
             {
                 options.UseNpgsql(configuration["cloudSql:ConnectionString"], npgsqlOptions =>
                 {
@@ -150,11 +149,12 @@ namespace Ranger.Identity
             builder.RegisterType<RangerIdentityDbContext>().AsSelf().InstancePerRequest();
             builder.RegisterType<TenantServiceRangerIdentityDbContext>();
             builder.RegisterInstance<CloudSqlOptions>(configuration.GetOptions<CloudSqlOptions>("cloudSql"));
-            builder.RegisterType<RangerIdentityDbContext>().InstancePerDependency();
             builder.Register((c, p) =>
             {
                 var provider = c.Resolve<TenantServiceRangerIdentityDbContext>();
-                var (dbContextOptions, model) = provider.GetDbContextOptions(p.TypedAs<string>());
+                var isDomain = p.TypedAs<bool>();
+                var value = p.TypedAs<string>();
+                var (dbContextOptions, model) = isDomain ? provider.GetDbContextOptionsByDomain(value) : provider.GetDbContextOptionsByTenantId(value);
                 var userStore = new UserStore<RangerUser>(new RangerIdentityDbContext(dbContextOptions));
 
                 return new RangerUserManager(model,
@@ -214,6 +214,8 @@ namespace Ranger.Identity
 
             app.UsePathBase("/auth");
             app.UseStaticFiles();
+            app.UseSwagger("v1", "Identity API");
+            app.UseAutoWrapper();
             app.UseRouting();
             app.UseIdentityServer();
             app.UseAuthorization();

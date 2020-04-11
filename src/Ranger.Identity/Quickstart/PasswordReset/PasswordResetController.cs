@@ -17,11 +17,11 @@ namespace IdentityServer4.Quickstart.UI
     [TenantSubdomainRequired]
     public class PasswordResetController : Controller
     {
-        private readonly Func<string, RangerUserManager> _userManager;
+        private readonly Func<bool, string, RangerUserManager> _userManager;
         private readonly IBusPublisher _busPublisher;
-        private readonly ITenantsClient _tenantClient;
+        private readonly TenantsHttpClient _tenantClient;
 
-        public PasswordResetController(IBusPublisher busPublisher, Func<string, RangerUserManager> userManager, ITenantsClient tenantClient)
+        public PasswordResetController(IBusPublisher busPublisher, Func<bool, string, RangerUserManager> userManager, TenantsHttpClient tenantClient)
         {
             _tenantClient = tenantClient;
             _busPublisher = busPublisher;
@@ -46,14 +46,18 @@ namespace IdentityServer4.Quickstart.UI
         {
             if (ModelState.IsValid)
             {
-                var localUserManager = _userManager(Request.Host.GetDomainFromHost());
+                var localUserManager = _userManager(true, Request.Host.GetDomainFromHost());
                 var user = await localUserManager.FindByEmailAsync(model.Email);
                 if (user != null)
                 {
                     var (_, domain) = GetDomainFromRequestHost();
-                    var tenant = await _tenantClient.GetTenantAsync<TenantOrganizationNameModel>(domain);
-                    var token = HttpUtility.UrlEncode(await localUserManager.GeneratePasswordResetTokenAsync(user));
-                    _busPublisher.Send(new SendResetPasswordEmail(user.FirstName, model.Email, domain, user.Id, tenant.OrganizationName, token), HttpContext.GetCorrelationContextFromHttpContext<SendResetPasswordEmail>(domain, model.Email));
+                    var apiResponse = await _tenantClient.GetTenantByIdAsync<TenantOrganizationNameModel>(domain);
+                    if (!apiResponse.IsError)
+                    {
+                        var token = HttpUtility.UrlEncode(await localUserManager.GeneratePasswordResetTokenAsync(user));
+                        _busPublisher.Send(new SendResetPasswordEmail(user.FirstName, model.Email, domain, user.Id, apiResponse.Result.OrganizationName, token), HttpContext.GetCorrelationContextFromHttpContext<SendResetPasswordEmail>(domain, model.Email));
+                    }
+                    ModelState.AddModelError("", "An error occurred resetting the password.");
                 }
             }
             return View("PasswordResetResult");

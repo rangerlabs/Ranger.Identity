@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 using Ranger.Common;
 
-namespace Ranger.Identity.Migrations
+namespace Ranger.Identity.Migrations.RangerIdentityDb
 {
     public partial class AddRowLevelSecurity : Migration
     {

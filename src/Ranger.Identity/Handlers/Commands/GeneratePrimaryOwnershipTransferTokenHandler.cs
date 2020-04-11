@@ -13,21 +13,22 @@ namespace Ranger.Identity.Handlers.Commands
     {
         private readonly IBusPublisher busPublisher;
         private readonly ILogger<GeneratePrimaryOwnershipTransferTokenHandler> logger;
-        private readonly Func<string, RangerUserManager> userManager;
+        private readonly Func<bool, string, RangerUserManager> userManager;
 
         public GeneratePrimaryOwnershipTransferTokenHandler(
             IBusPublisher busPublisher,
             ILogger<GeneratePrimaryOwnershipTransferTokenHandler> logger,
-            Func<string, RangerUserManager> userManager)
+            Func<bool, string, RangerUserManager> userManager)
         {
             this.busPublisher = busPublisher;
             this.logger = logger;
             this.userManager = userManager;
         }
 
+
         public async Task HandleAsync(GeneratePrimaryOwnershipTransferToken message, ICorrelationContext context)
         {
-            var localUserManager = userManager(message.Domain);
+            var localUserManager = userManager(false, message.TenantId);
             var user = await localUserManager.FindByEmailAsync(message.TransferUserEmail);
             if (user is null)
             {

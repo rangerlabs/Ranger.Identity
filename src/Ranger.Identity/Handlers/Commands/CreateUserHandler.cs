@@ -15,26 +15,23 @@ namespace Ranger.Identity
     {
         private readonly IBusPublisher busPublisher;
         private readonly ILogger<CreateUserHandler> logger;
-        private readonly Func<string, RangerUserManager> userManager;
-        private readonly ITenantsClient tenantsClient;
+        private readonly Func<bool, string, RangerUserManager> userManager;
 
         public CreateUserHandler(
             IBusPublisher busPublisher,
-            ITenantsClient tenantsClient,
             ILogger<CreateUserHandler> logger,
-            Func<string, RangerUserManager> userManager)
+            Func<bool, string, RangerUserManager> userManager)
         {
             this.busPublisher = busPublisher;
             this.logger = logger;
             this.userManager = userManager;
-            this.tenantsClient = tenantsClient;
         }
 
         public async Task HandleAsync(CreateUser command, ICorrelationContext context)
         {
-            logger.LogInformation($"Creating user '{command.Email}' for tenant with domain '{command.Domain}'.");
+            logger.LogInformation($"Creating user '{command.Email}' for tenant with domain '{command.TenantId}'.");
 
-            var localUserManager = userManager(command.Domain);
+            var localUserManager = userManager(false, command.TenantId);
 
             var user = new RangerUser
             {
@@ -44,7 +41,7 @@ namespace Ranger.Identity
                 EmailConfirmed = false,
                 FirstName = command.FirstName,
                 LastName = command.LastName,
-                DatabaseUsername = localUserManager.TenantOrganizationNameModel.DatabaseUsername
+                TenantId = localUserManager.contextTenant.TenantId
             };
 
             IdentityResult createResult = null;
@@ -71,7 +68,7 @@ namespace Ranger.Identity
 
             var emailToken = HttpUtility.UrlEncode(await localUserManager.GenerateEmailConfirmationTokenAsync(user));
 
-            busPublisher.Publish(new UserCreated(command.Domain, user.Id, command.Email, user.FirstName, command.Role, emailToken, command.AuthorizedProjectIds), context);
+            busPublisher.Publish(new UserCreated(command.TenantId, user.Id, command.Email, user.FirstName, command.Role, emailToken, command.AuthorizedProjectIds), context);
         }
     }
 }

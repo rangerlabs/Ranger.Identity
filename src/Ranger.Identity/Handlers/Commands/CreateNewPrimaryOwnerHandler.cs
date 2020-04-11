@@ -16,27 +16,24 @@ namespace Ranger.Identity
     public class CreateNewPrimaryOwnerHandler : ICommandHandler<CreateNewPrimaryOwner>
     {
         private readonly IBusPublisher busPublisher;
-        private readonly Func<string, RangerUserManager> userManager;
-        private readonly ITenantsClient tenantsClient;
+        private readonly Func<bool, string, RangerUserManager> userManager;
         private readonly ILogger<CreateNewPrimaryOwnerHandler> logger;
 
         public CreateNewPrimaryOwnerHandler(
             IBusPublisher busPublisher,
-            Func<string, RangerUserManager> userManager,
-            ITenantsClient tenantsClient,
+            Func<bool, string, RangerUserManager> userManager,
             ILogger<CreateNewPrimaryOwnerHandler> logger)
         {
             this.busPublisher = busPublisher;
             this.userManager = userManager;
-            this.tenantsClient = tenantsClient;
             this.logger = logger;
         }
 
         public async Task HandleAsync(CreateNewPrimaryOwner command, ICorrelationContext context)
         {
-            logger.LogInformation($"Creating new tenant owner '{command.Email}' for tenant with domain '{command.Domain}'.");
+            logger.LogInformation($"Creating new tenant owner '{command.Email}' for tenant with domain '{command.TenantId}'.");
 
-            var localUserManager = userManager(command.Domain);
+            var localUserManager = userManager(false, command.TenantId);
 
             var user = new RangerUser
             {
@@ -46,7 +43,7 @@ namespace Ranger.Identity
                 EmailConfirmed = true,
                 FirstName = command.FirstName,
                 LastName = command.LastName,
-                DatabaseUsername = localUserManager.TenantOrganizationNameModel.DatabaseUsername
+                TenantId = localUserManager.contextTenant.TenantId
             };
             try
             {
@@ -64,7 +61,7 @@ namespace Ranger.Identity
                 throw;
             }
 
-            this.busPublisher.Publish(new NewPrimaryOwnerCreated(user.Email, user.FirstName, user.LastName, command.Domain, "PrimaryOwner"), context);
+            this.busPublisher.Publish(new NewPrimaryOwnerCreated(user.Email, user.FirstName, user.LastName, command.TenantId, "PrimaryOwner"), context);
         }
     }
 }

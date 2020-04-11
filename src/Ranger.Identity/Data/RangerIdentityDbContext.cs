@@ -55,8 +55,8 @@ namespace Ranger.Identity.Data
             {
                 builder.Metadata.RemoveIndex(new[] { builder.Property(u => u.NormalizedUserName).Metadata });
                 builder.Metadata.RemoveIndex(new[] { builder.Property(u => u.NormalizedEmail).Metadata });
-                builder.HasIndex(u => new { u.DatabaseUsername, u.NormalizedUserName }).HasName("UserNameIndex").IsUnique();
-                builder.HasIndex(u => new { u.DatabaseUsername, u.NormalizedEmail }).HasName("EmailIndex").IsUnique();
+                builder.HasIndex(u => new { u.TenantId, u.NormalizedUserName }).HasName("UserNameIndex").IsUnique();
+                builder.HasIndex(u => new { u.TenantId, u.NormalizedEmail }).HasName("EmailIndex").IsUnique();
             });
         }
     }

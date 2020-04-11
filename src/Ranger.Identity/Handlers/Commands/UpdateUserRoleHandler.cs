@@ -16,28 +16,25 @@ namespace Ranger.Identity
     {
         private readonly IBusPublisher busPublisher;
         private readonly ILogger<UpdateUserRoleHandler> logger;
-        private readonly Func<string, RangerUserManager> userManager;
-        private readonly ITenantsClient tenantsClient;
+        private readonly Func<bool, string, RangerUserManager> userManager;
 
         public UpdateUserRoleHandler(
             IBusPublisher busPublisher,
-            ITenantsClient tenantsClient,
             ILogger<UpdateUserRoleHandler> logger,
-            Func<string, RangerUserManager> userManager)
+            Func<bool, string, RangerUserManager> userManager)
         {
             this.busPublisher = busPublisher;
             this.logger = logger;
             this.userManager = userManager;
-            this.tenantsClient = tenantsClient;
         }
 
         public async Task HandleAsync(UpdateUserRole command, ICorrelationContext context)
         {
-            logger.LogInformation($"Updating user permissions for '{command.Email}' in domain '{command.Domain}'.");
+            logger.LogInformation($"Updating user permissions for '{command.Email}' in domain '{command.TenantId}'.");
 
             try
             {
-                var localUserManager = userManager(command.Domain);
+                var localUserManager = userManager(false, command.TenantId);
 
                 var commandingUser = await localUserManager.FindByEmailAsync(command.CommandingUserEmail);
                 var user = await localUserManager.FindByEmailAsync(command.Email);
@@ -64,22 +61,22 @@ namespace Ranger.Identity
                         roleRemoveResult = await localUserManager.RemoveFromRoleAsync(user, Enum.GetName(typeof(RolesEnum), currentRole));
                         if (!roleRemoveResult.Succeeded)
                         {
-                            logger.LogError($"Failed to remove user '{command.Email}' in domain '{command.Domain}' from previous role. Attempting to rolling back the addition of the requested role. {String.Join(Environment.NewLine, roleRemoveResult.Errors.ToList())}");
+                            logger.LogError($"Failed to remove user '{command.Email}' in domain '{command.TenantId}' from previous role. Attempting to rolling back the addition of the requested role. {String.Join(Environment.NewLine, roleRemoveResult.Errors.ToList())}");
                             var result = await localUserManager.RemoveFromRoleAsync(user, command.Role);
                             if (result.Succeeded)
                             {
-                                logger.LogInformation($"Successfully rolled back additional role '{command.Role}' for '{command.Email}' in domain '{command.Domain}'.");
+                                logger.LogInformation($"Successfully rolled back additional role '{command.Role}' for '{command.Email}' in domain '{command.TenantId}'.");
                             }
                             else
                             {
-                                logger.LogError($"Failed to role back additional role '{command.Role}' for '{command.Email}' in domain '{command.Domain}'.");
+                                logger.LogError($"Failed to role back additional role '{command.Role}' for '{command.Email}' in domain '{command.TenantId}'.");
                             }
                             throw new RangerException("An unspecified error occurred. Please try again later.");
                         }
                     }
                     else
                     {
-                        logger.LogError($"Failed to add role '{command.Role}' for '{command.Email}' in domain '{command.Domain}'.");
+                        logger.LogError($"Failed to add role '{command.Role}' for '{command.Email}' in domain '{command.TenantId}'.");
                         throw new RangerException("An unspecified error occurred. Please try again later.");
                     }
                 }
@@ -88,7 +85,7 @@ namespace Ranger.Identity
                     logger.LogWarning("The user role was not modified.");
                 }
 
-                busPublisher.Publish(new UserRoleUpdated(command.Domain, user.Id, command.Email, user.FirstName, command.Role), context);
+                busPublisher.Publish(new UserRoleUpdated(command.TenantId, user.Id, command.Email, user.FirstName, command.Role), context);
             }
             catch (Exception ex)
             {

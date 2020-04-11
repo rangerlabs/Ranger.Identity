@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
-namespace Ranger.Identity.Migrations
+namespace Ranger.Identity
 {
     public partial class Initial : Migration
     {
@@ -57,7 +57,7 @@ namespace Ranger.Identity.Migrations
                     access_failed_count = table.Column<int>(nullable: false),
                     first_name = table.Column<string>(nullable: false),
                     last_name = table.Column<string>(nullable: false),
-                    database_username = table.Column<string>(nullable: false),
+                    tenant_id = table.Column<string>(maxLength: 36, nullable: false),
                     unconfirmed_email = table.Column<string>(maxLength: 256, nullable: true)
                 },
                 constraints: table =>
@@ -200,13 +200,13 @@ namespace Ranger.Identity.Migrations
             migrationBuilder.CreateIndex(
                 name: "EmailIndex",
                 table: "users",
-                columns: new[] { "database_username", "normalized_email" },
+                columns: new[] { "tenant_id", "normalized_email" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "UserNameIndex",
                 table: "users",
-                columns: new[] { "database_username", "normalized_user_name" },
+                columns: new[] { "tenant_id", "normalized_user_name" },
                 unique: true);
         }
 

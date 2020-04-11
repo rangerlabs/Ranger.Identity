@@ -14,10 +14,10 @@ namespace Ranger.Identity
         public TenantSubdomainRequiredAttribute() : base(typeof(TenantSubdomainRequiredFilterImpl)) { }
         private class TenantSubdomainRequiredFilterImpl : IAsyncActionFilter
         {
-            private readonly ITenantsClient tenantsClient;
+            private readonly TenantsHttpClient tenantsClient;
             private ILogger<TenantSubdomainRequiredFilterImpl> logger { get; }
 
-            public TenantSubdomainRequiredFilterImpl(ITenantsClient tenantsClient, ILogger<TenantSubdomainRequiredFilterImpl> logger)
+            public TenantSubdomainRequiredFilterImpl(TenantsHttpClient tenantsClient, ILogger<TenantSubdomainRequiredFilterImpl> logger)
             {
                 this.tenantsClient = tenantsClient;
                 this.logger = logger;
@@ -29,26 +29,28 @@ namespace Ranger.Identity
                 {
                     try
                     {
-                        var tenantApiResponse = await tenantsClient.EnabledAsync<EnabledResult>(domain);
-                        if (tenantApiResponse.Enabled)
+                        var tenantApiResponse = await tenantsClient.IsConfirmedAsync(domain);
+                        if (!tenantApiResponse.IsError)
                         {
-                            await next();
+                            if (tenantApiResponse.Result)
+                            {
+                                await next();
+                            }
+                            else
+                            {
+                                context.Result = new RedirectResult($"https://{GlobalConfig.RedirectHost}/enter-domain");
+                                // TODO: give info that the domain is not enabled
+                                // context.Result = new ForbidResult($"The tenant for the provided subdomain is not enabled '{domain}'. Ensure the domain has been confirmed.");
+                                return;
+                            }
                         }
                         else
                         {
                             context.Result = new RedirectResult($"https://{GlobalConfig.RedirectHost}/enter-domain");
-                            // TODO: give info that the domain is not enabled
                             // context.Result = new ForbidResult($"The tenant for the provided subdomain is not enabled '{domain}'. Ensure the domain has been confirmed.");
                             return;
                         }
-                    }
-                    catch (HttpClientException<EnabledResult> ex)
-                    {
-                        if ((int)ex.ApiResponse.StatusCode == StatusCodes.Status404NotFound)
-                        {
-                            context.Result = new RedirectResult($"https://{GlobalConfig.RedirectHost}/enter-domain");
-                            return;
-                        }
+
                     }
                     catch (Exception ex)
                     {

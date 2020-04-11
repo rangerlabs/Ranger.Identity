@@ -19,10 +19,10 @@ namespace Ranger.Identity
             }
 
             TransferUserEmail = transferUserEmail;
-            Domain = domain;
+            TenantId = domain;
         }
 
         public string TransferUserEmail { get; }
-        public string Domain { get; }
+        public string TenantId { get; }
     }
 }

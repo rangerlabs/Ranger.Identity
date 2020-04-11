@@ -6,7 +6,7 @@ namespace Ranger.Identity
     [MessageNamespaceAttribute("identity")]
     public class CreateUser : ICommand
     {
-        public string Domain { get; set; }
+        public string TenantId { get; set; }
         public string Email { get; }
         public string FirstName { get; }
         public string LastName { get; }
@@ -14,11 +14,11 @@ namespace Ranger.Identity
         public string CommandingUserEmail { get; }
         public IEnumerable<string> AuthorizedProjectIds { get; }
 
-        public CreateUser(string domain, string email, string firstName, string lastName, string role, string commandingUserEmail, IEnumerable<string> authorizedProjectIds)
+        public CreateUser(string tenantId, string email, string firstName, string lastName, string role, string commandingUserEmail, IEnumerable<string> authorizedProjectIds)
         {
-            if (string.IsNullOrEmpty(domain))
+            if (string.IsNullOrEmpty(tenantId))
             {
-                throw new System.ArgumentException($"{nameof(domain)} was null or whitespace.");
+                throw new System.ArgumentException($"{nameof(tenantId)} was null or whitespace.");
             }
 
             if (string.IsNullOrEmpty(email))
@@ -46,7 +46,7 @@ namespace Ranger.Identity
                 throw new System.ArgumentException($"{nameof(commandingUserEmail)} was null or whitespace.");
             }
 
-            this.Domain = domain;
+            this.TenantId = tenantId;
             this.Email = email;
             this.FirstName = firstName;
             this.LastName = lastName;

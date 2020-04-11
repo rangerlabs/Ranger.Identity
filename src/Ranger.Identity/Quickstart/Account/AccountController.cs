@@ -24,22 +24,22 @@ namespace IdentityServer4.Quickstart.UI
     [TenantSubdomainRequired]
     public class AccountController : Controller
     {
-        private readonly Func<string, RangerUserManager> userManager;
-        private readonly Func<string, RangerSignInManager> signInManager;
+        private readonly Func<bool, string, RangerUserManager> userManager;
+        private readonly Func<bool, string, RangerSignInManager> signInManager;
         private readonly IIdentityServerInteractionService _interaction;
         private readonly IClientStore _clientStore;
         private readonly IAuthenticationSchemeProvider _schemeProvider;
         private readonly IEventService _events;
-        private readonly ITenantsClient _tenantsClient;
+        private readonly TenantsHttpClient _tenantsClient;
 
         public AccountController(
-            Func<string, RangerUserManager> userManager,
+            Func<bool, string, RangerUserManager> userManager,
             IIdentityServerInteractionService interaction,
-            Func<string, RangerSignInManager> signInManager,
+            Func<bool, string, RangerSignInManager> signInManager,
             IClientStore clientStore,
             IAuthenticationSchemeProvider schemeProvider,
             IEventService events,
-            ITenantsClient tenantsClient)
+            TenantsHttpClient tenantsClient)
         {
             this.userManager = userManager;
             _interaction = interaction;
@@ -107,24 +107,24 @@ namespace IdentityServer4.Quickstart.UI
 
             if (ModelState.IsValid)
             {
-                ContextTenant tenant = null;
+                ApiResponse<ContextTenant> apiResponse = null;
                 try
                 {
                     var (_, domain) = GetDomainFromRequestHost();
-                    tenant = await _tenantsClient.GetTenantAsync<ContextTenant>(domain);
+                    apiResponse = await _tenantsClient.GetTenantByDomainAsync<ContextTenant>(domain);
                 }
                 catch (Exception)
                 {
                     ModelState.AddModelError(string.Empty, "An error occurred logging the user in.");
                 }
 
-                if (tenant != null)
+                if (!apiResponse.IsError && apiResponse.Result != null)
                 {
-                    var localSignInManager = signInManager(Request.Host.GetDomainFromHost());
+                    var localSignInManager = signInManager(true, Request.Host.GetDomainFromHost());
                     var result = await localSignInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberLogin, lockoutOnFailure: true);
                     if (result.Succeeded)
                     {
-                        var localUserManager = userManager(Request.Host.GetDomainFromHost());
+                        var localUserManager = userManager(true, Request.Host.GetDomainFromHost());
                         var user = await localUserManager.FindByEmailAsync(model.Email);
                         if (user != null)
                         {
@@ -217,20 +217,20 @@ namespace IdentityServer4.Quickstart.UI
 
             if (User?.Identity.IsAuthenticated == true)
             {
-                ContextTenant tenant = null;
+                ApiResponse<ContextTenant> apiResponse = null;
                 try
                 {
                     var (_, domain) = GetDomainFromRequestHost();
-                    tenant = await _tenantsClient.GetTenantAsync<ContextTenant>(domain);
+                    apiResponse = await _tenantsClient.GetTenantByDomainAsync<ContextTenant>(domain);
                 }
                 catch (Exception)
                 {
                     ModelState.AddModelError(string.Empty, "An error occurred logging the user out.");
                 }
 
-                if (tenant != null)
+                if (!apiResponse.IsError && apiResponse.Result != null)
                 {
-                    var localSignInManager = signInManager(Request.Host.GetDomainFromHost());
+                    var localSignInManager = signInManager(true, Request.Host.GetDomainFromHost());
                     // delete local authentication cookie
                     await localSignInManager.SignOutAsync();
                     // raise the logout event
