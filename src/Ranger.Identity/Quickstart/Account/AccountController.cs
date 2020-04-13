@@ -107,7 +107,7 @@ namespace IdentityServer4.Quickstart.UI
 
             if (ModelState.IsValid)
             {
-                ApiResponse<ContextTenant> apiResponse = null;
+                RangerApiResponse<ContextTenant> apiResponse = null;
                 try
                 {
                     var (_, domain) = GetDomainFromRequestHost();
@@ -217,7 +217,7 @@ namespace IdentityServer4.Quickstart.UI
 
             if (User?.Identity.IsAuthenticated == true)
             {
-                ApiResponse<ContextTenant> apiResponse = null;
+                RangerApiResponse<ContextTenant> apiResponse = null;
                 try
                 {
                     var (_, domain) = GetDomainFromRequestHost();
