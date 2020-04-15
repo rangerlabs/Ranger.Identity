@@ -8,9 +8,9 @@ namespace Ranger.Identity
         public string TenantId { get; }
         public string DatabasePassword { get; }
 
-        public InitializeTenant(string TenantId, string databasePassword)
+        public InitializeTenant(string tenantId, string databasePassword)
         {
-            this.TenantId = TenantId;
+            this.TenantId = tenantId;
             this.DatabasePassword = databasePassword;
         }
     }

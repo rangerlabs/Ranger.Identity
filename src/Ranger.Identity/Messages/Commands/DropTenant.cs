@@ -7,9 +7,9 @@ namespace Ranger.Identity
     {
         public string TenantId { get; }
 
-        public DropTenant(string TenantId)
+        public DropTenant(string tenantId)
         {
-            this.TenantId = TenantId;
+            this.TenantId = tenantId;
         }
     }
 }

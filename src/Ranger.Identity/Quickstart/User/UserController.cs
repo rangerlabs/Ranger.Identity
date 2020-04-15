@@ -176,6 +176,7 @@ namespace Ranger.Identity
         ///<param name="email">The email of the user whose password should be changed</param>
         ///<param name="userConfirmPasswordResetModel">The model necessary to change the user's password</param>
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpPost("/users/{tenantId}/{email}/password-reset")]
         public async Task<ApiResponse> SetNewPassword(string tenantId, string email, UserConfirmPasswordResetModel userConfirmPasswordResetModel)
@@ -202,7 +203,7 @@ namespace Ranger.Identity
             if (!resetResult.Succeeded)
             {
                 logger.LogError($"Failed to set password for user {email}. Errors: {String.Join(';', resetResult.Errors.Select(_ => _.Description).ToList())}");
-                throw new ApiException("Failed to set password", statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to set password", statusCode: StatusCodes.Status400BadRequest);
             }
 
             //TODO: Assess Security implications of a user resetting their password before being confirmed
@@ -372,7 +373,7 @@ namespace Ranger.Identity
                 var confirmResult = await localUserManager.ConfirmEmailAsync(user, userConfirmModel.Token);
                 if (!confirmResult.Succeeded)
                 {
-                    var message = "Ensure the provided current email and token are correct.";
+                    var message = "Failed to confirm the user";
                     logger.LogError($"{message} Errors: {String.Join(';', confirmResult.Errors.Select(_ => _.Description).ToList())}");
                     throw new ApiException(message, statusCode: StatusCodes.Status400BadRequest);
                 }
@@ -472,7 +473,7 @@ namespace Ranger.Identity
                 }
                 return new ApiResponse("Success deleted account");
             }
-            throw new ApiException(apiResponse.ResponseException.ExceptionMessage.Error, statusCode: apiResponse.StatusCode);
+            throw new ApiException(apiResponse.ResponseException.ExceptionMessage.Error.Message, statusCode: apiResponse.StatusCode);
         }
 
         ///<summary>
@@ -519,7 +520,7 @@ namespace Ranger.Identity
                 }
                 return new ApiResponse("Successfully deleted user");
             }
-            throw new ApiException(apiResponse.ResponseException.ExceptionMessage.Error, statusCode: apiResponse.StatusCode);
+            throw new ApiException(apiResponse.ResponseException.ExceptionMessage.Error.Message, statusCode: apiResponse.StatusCode);
         }
 
         [NonAction]
