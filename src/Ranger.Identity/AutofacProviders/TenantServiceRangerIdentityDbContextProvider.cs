@@ -24,31 +24,31 @@ namespace Ranger.Identity
             this.logger = logger;
             this.tenantsClient = tenantsClient;
         }
+
         public (DbContextOptions<RangerIdentityDbContext> options, TenantOrganizationNameModel databaseUsername) GetDbContextOptionsByDomain(string domain)
         {
-            var apiResponse = this.tenantsClient.GetTenantByDomainAsync<TenantOrganizationNameModel>(domain).Result;
-            if (!apiResponse.IsError)
+            try
             {
-                getDbContextOptions(apiResponse.Result);
+                var apiResponse = this.tenantsClient.GetTenantByDomainAsync<TenantOrganizationNameModel>(domain).Result;
+                this.logger.LogError("Received {StatusCode} when attempting to retrieve the tenant. Cannot construct the tenant specific repository.", apiResponse.StatusCode);
+                throw new ApiException("Failed to retrieve tenant");
             }
-            this.logger.LogError("An exception occurred retrieving the ContextTenant object from the Tenants service. Cannot construct the tenant specific repository.");
-            throw new ApiException("Internal Server Error", StatusCodes.Status500InternalServerError);
+            catch (ApiException ex)
+            {
+                this.logger.LogError(ex, "An exception occurred retrieving the ContextTenant object from the Tenants service. Cannot construct the tenant specific repository.");
+                throw;
+            }
         }
+
         public (DbContextOptions<RangerIdentityDbContext> options, TenantOrganizationNameModel databaseUsername) GetDbContextOptionsByTenantId(string tenantId)
         {
             var apiResponse = this.tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(tenantId).Result;
-            if (!apiResponse.IsError)
-            {
-                getDbContextOptions(apiResponse.Result);
-            }
-            this.logger.LogError("An exception occurred retrieving the ContextTenant object from the Tenants service. Cannot construct the tenant specific repository.");
-            throw new ApiException("Internal Server Error", StatusCodes.Status500InternalServerError);
+            this.logger.LogError("Received {StatusCode} when attempting to retrieve the tenant. Cannot construct the tenant specific repository.", apiResponse.StatusCode);
+            throw new ApiException("Failed to retrieve tenant");
         }
-
 
         private (DbContextOptions<RangerIdentityDbContext> options, TenantOrganizationNameModel tenantOrganizationNameModel) getDbContextOptions(TenantOrganizationNameModel tenantOrganizationNameModel)
         {
-
             NpgsqlConnectionStringBuilder connectionBuilder = new NpgsqlConnectionStringBuilder(cloudSqlOptions.ConnectionString);
             connectionBuilder.Username = tenantOrganizationNameModel.TenantId;
             connectionBuilder.Password = tenantOrganizationNameModel.DatabasePassword;

@@ -27,6 +27,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Ranger.ApiUtilities;
+using Microsoft.AspNetCore.Mvc.Versioning;
 
 namespace Ranger.Identity
 {
@@ -57,7 +58,9 @@ namespace Ranger.Identity
             {
                 services.AddSwaggerGen("Identity API", "v1");
             }
+            services.AddApiVersioning(o => o.ApiVersionReader = new HeaderApiVersionReader("api-version"));
 
+            services.AddPollyPolicyRegistry();
             services.AddTenantsHttpClient("http://tenants:8082", "tenantsApi", "cKprgh9wYKWcsm");
             services.AddProjectsHttpClient("http://projects:8086", "projectsApi", "usGwT8Qsp4La2");
             services.AddSubscriptionsHttpClient("http://subscriptions:8089", "subscriptionsApi", "4T3SXqXaD6GyGHn4RY");
@@ -171,7 +174,7 @@ namespace Ranger.Identity
                     c.Resolve<IdentityErrorDescriber>(),
                     c.Resolve<IServiceProvider>(),
                     c.Resolve<ILogger<UserManager<RangerUser>>>());
-            });
+            }).InstancePerDependency();
             builder.Register((c, p) =>
             {
                 return new RangerSignInManager(c.Resolve<RangerUserManager>(p),
@@ -181,7 +184,7 @@ namespace Ranger.Identity
                     c.Resolve<ILogger<SignInManager<RangerUser>>>(),
                     c.Resolve<IAuthenticationSchemeProvider>(),
                     c.Resolve<IUserConfirmation<RangerUser>>());
-            });
+            }).InstancePerDependency();
             builder.AddRabbitMq();
         }
 
@@ -199,7 +202,10 @@ namespace Ranger.Identity
             app.UseForwardedHeaders(forwardOptions);
 
             applicationLifetime.ApplicationStopping.Register(OnShutdown);
+
+            //TODO: Only initialize once and not in production
             InitializeDatabase(app, loggerFactory.CreateLogger<Startup>());
+
             app.UseIdentityServer();
             this.busSubscriber = app.UseRabbitMQ()
                 .SubscribeCommand<CreateNewPrimaryOwner>((c, e) =>
@@ -221,7 +227,7 @@ namespace Ranger.Identity
             {
                 app.UseSwagger("v1", "Identity API");
             }
-            app.UseAutoWrapper();
+            app.UseAutoWrapper(false, "/users");
             app.UseStaticFiles();
             app.UseRouting();
             app.UseIdentityServer();
