@@ -16,16 +16,19 @@ namespace Ranger.Identity
     {
         private readonly IBusPublisher busPublisher;
         private readonly ILogger<UpdateUserRoleHandler> logger;
-        private readonly Func<bool, string, RangerUserManager> userManager;
+        private readonly Func<TenantOrganizationNameModel, RangerUserManager> userManager;
+        private readonly TenantsHttpClient tenantsHttpClient;
 
         public UpdateUserRoleHandler(
             IBusPublisher busPublisher,
             ILogger<UpdateUserRoleHandler> logger,
-            Func<bool, string, RangerUserManager> userManager)
+            Func<TenantOrganizationNameModel, RangerUserManager> userManager,
+            TenantsHttpClient tenantsHttpClient)
         {
             this.busPublisher = busPublisher;
             this.logger = logger;
             this.userManager = userManager;
+            this.tenantsHttpClient = tenantsHttpClient;
         }
 
         public async Task HandleAsync(UpdateUserRole command, ICorrelationContext context)
@@ -34,7 +37,8 @@ namespace Ranger.Identity
 
             try
             {
-                var localUserManager = userManager(false, command.TenantId);
+                var apiResponse = await tenantsHttpClient.GetTenantByIdAsync<TenantOrganizationNameModel>(command.TenantId);
+                var localUserManager = userManager(apiResponse.Result);
 
                 var commandingUser = await localUserManager.FindByEmailAsync(command.CommandingUserEmail);
                 var user = await localUserManager.FindByEmailAsync(command.Email);

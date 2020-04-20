@@ -17,13 +17,13 @@ namespace IdentityServer4.Quickstart.UI
     [TenantSubdomainRequired]
     public class PasswordResetController : Controller
     {
-        private readonly Func<bool, string, RangerUserManager> _userManager;
+        private readonly Func<TenantOrganizationNameModel, RangerUserManager> _userManager;
         private readonly IBusPublisher _busPublisher;
-        private readonly TenantsHttpClient _tenantClient;
+        private readonly TenantsHttpClient _tenantsClient;
 
-        public PasswordResetController(IBusPublisher busPublisher, Func<bool, string, RangerUserManager> userManager, TenantsHttpClient tenantClient)
+        public PasswordResetController(IBusPublisher busPublisher, Func<TenantOrganizationNameModel, RangerUserManager> userManager, TenantsHttpClient tenantsClient)
         {
-            _tenantClient = tenantClient;
+            _tenantsClient = tenantsClient;
             _busPublisher = busPublisher;
             _userManager = userManager;
         }
@@ -46,12 +46,13 @@ namespace IdentityServer4.Quickstart.UI
         {
             if (ModelState.IsValid)
             {
-                var localUserManager = _userManager(true, Request.Host.GetDomainFromHost());
+                var tenantApiResponse = await _tenantsClient.GetTenantByDomainAsync<TenantOrganizationNameModel>(Request.Host.GetDomainFromHost());
+                var localUserManager = _userManager(tenantApiResponse.Result);
                 var user = await localUserManager.FindByEmailAsync(model.Email);
                 if (user != null)
                 {
                     var (_, domain) = GetDomainFromRequestHost();
-                    var apiResponse = await _tenantClient.GetTenantByIdAsync<TenantOrganizationNameModel>(domain);
+                    var apiResponse = await _tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(domain);
                     if (!apiResponse.IsError)
                     {
                         var token = HttpUtility.UrlEncode(await localUserManager.GeneratePasswordResetTokenAsync(user));

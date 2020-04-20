@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Ranger.Common;
 using Ranger.Identity.Data;
+using Ranger.InternalHttpClient;
 using Ranger.RabbitMQ;
 
 namespace Ranger.Identity.Handlers.Commands
@@ -13,26 +14,30 @@ namespace Ranger.Identity.Handlers.Commands
     {
         private readonly IBusPublisher busPublisher;
         private readonly ILogger<GeneratePrimaryOwnershipTransferTokenHandler> logger;
-        private readonly Func<bool, string, RangerUserManager> userManager;
+        private readonly Func<TenantOrganizationNameModel, RangerUserManager> userManager;
+        private readonly TenantsHttpClient tenantsHttpClient;
 
         public GeneratePrimaryOwnershipTransferTokenHandler(
             IBusPublisher busPublisher,
             ILogger<GeneratePrimaryOwnershipTransferTokenHandler> logger,
-            Func<bool, string, RangerUserManager> userManager)
+            Func<TenantOrganizationNameModel, RangerUserManager> userManager,
+            TenantsHttpClient tenantsHttpClient)
         {
             this.busPublisher = busPublisher;
             this.logger = logger;
             this.userManager = userManager;
+            this.tenantsHttpClient = tenantsHttpClient;
         }
 
 
-        public async Task HandleAsync(GeneratePrimaryOwnershipTransferToken message, ICorrelationContext context)
+        public async Task HandleAsync(GeneratePrimaryOwnershipTransferToken command, ICorrelationContext context)
         {
-            var localUserManager = userManager(false, message.TenantId);
-            var user = await localUserManager.FindByEmailAsync(message.TransferUserEmail);
+            var apiResponse = await tenantsHttpClient.GetTenantByIdAsync<TenantOrganizationNameModel>(command.TenantId);
+            var localUserManager = userManager(apiResponse.Result);
+            var user = await localUserManager.FindByEmailAsync(command.TransferUserEmail);
             if (user is null)
             {
-                throw new RangerException($"Failed to find Primary Owner '{message.TransferUserEmail}.'");
+                throw new RangerException($"Failed to find Primary Owner '{command.TransferUserEmail}.'");
             }
 
             string token = "";

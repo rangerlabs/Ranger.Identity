@@ -159,9 +159,8 @@ namespace Ranger.Identity
             builder.Register((c, p) =>
             {
                 var provider = c.Resolve<TenantServiceRangerIdentityDbContext>();
-                var isDomain = p.TypedAs<bool>();
-                var value = p.TypedAs<string>();
-                var (dbContextOptions, model) = isDomain ? provider.GetDbContextOptionsByDomain(value) : provider.GetDbContextOptionsByTenantId(value);
+                var value = p.TypedAs<TenantOrganizationNameModel>();
+                var (dbContextOptions, model) = provider.GetDbContextOptions(value);
                 var userStore = new UserStore<RangerUser>(new RangerIdentityDbContext(dbContextOptions));
 
                 return new RangerUserManager(model,

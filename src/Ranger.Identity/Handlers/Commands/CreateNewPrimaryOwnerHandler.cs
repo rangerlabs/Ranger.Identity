@@ -16,24 +16,28 @@ namespace Ranger.Identity
     public class CreateNewPrimaryOwnerHandler : ICommandHandler<CreateNewPrimaryOwner>
     {
         private readonly IBusPublisher busPublisher;
-        private readonly Func<bool, string, RangerUserManager> userManager;
+        private readonly Func<TenantOrganizationNameModel, RangerUserManager> userManager;
+        private readonly TenantsHttpClient _tenantsClient;
         private readonly ILogger<CreateNewPrimaryOwnerHandler> logger;
 
         public CreateNewPrimaryOwnerHandler(
             IBusPublisher busPublisher,
-            Func<bool, string, RangerUserManager> userManager,
-            ILogger<CreateNewPrimaryOwnerHandler> logger)
+            Func<TenantOrganizationNameModel, RangerUserManager> userManager,
+            ILogger<CreateNewPrimaryOwnerHandler> logger,
+            TenantsHttpClient tenantsClient
+            )
         {
             this.busPublisher = busPublisher;
             this.userManager = userManager;
             this.logger = logger;
+            this._tenantsClient = tenantsClient;
         }
 
         public async Task HandleAsync(CreateNewPrimaryOwner command, ICorrelationContext context)
         {
             logger.LogInformation($"Creating new tenant owner '{command.Email}' for tenant with domain '{command.TenantId}'.");
-
-            var localUserManager = userManager(false, command.TenantId);
+            var apiResponse = await _tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(command.TenantId);
+            var localUserManager = userManager(apiResponse.Result);
 
             var user = new RangerUser
             {

@@ -15,23 +15,27 @@ namespace Ranger.Identity
     {
         private readonly IBusPublisher busPublisher;
         private readonly ILogger<CreateUserHandler> logger;
-        private readonly Func<bool, string, RangerUserManager> userManager;
+        private readonly Func<TenantOrganizationNameModel, RangerUserManager> userManager;
+        private readonly TenantsHttpClient tenantsHttpClient;
 
         public CreateUserHandler(
             IBusPublisher busPublisher,
             ILogger<CreateUserHandler> logger,
-            Func<bool, string, RangerUserManager> userManager)
+            Func<TenantOrganizationNameModel, RangerUserManager> userManager,
+            TenantsHttpClient tenantsHttpClient)
         {
             this.busPublisher = busPublisher;
             this.logger = logger;
             this.userManager = userManager;
+            this.tenantsHttpClient = tenantsHttpClient;
         }
 
         public async Task HandleAsync(CreateUser command, ICorrelationContext context)
         {
             logger.LogInformation($"Creating user '{command.Email}' for tenant with domain '{command.TenantId}'.");
 
-            var localUserManager = userManager(false, command.TenantId);
+            var apiResponse = await tenantsHttpClient.GetTenantByIdAsync<TenantOrganizationNameModel>(command.TenantId);
+            var localUserManager = userManager(apiResponse.Result);
 
             var user = new RangerUser
             {

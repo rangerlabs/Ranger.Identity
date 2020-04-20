@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Ranger.Common;
 using Ranger.Identity.Data;
+using Ranger.InternalHttpClient;
 using Ranger.RabbitMQ;
 
 namespace Ranger.Identity.Handlers.Commands
@@ -11,30 +12,32 @@ namespace Ranger.Identity.Handlers.Commands
     public class TransferPrimaryOwnershipHandler : ICommandHandler<TransferPrimaryOwnership>
     {
         private readonly IBusPublisher busPublisher;
-        private readonly Func<bool, string, RangerUserManager> userManager;
+        private readonly Func<TenantOrganizationNameModel, RangerUserManager> userManager;
         private readonly ILogger<TransferPrimaryOwnership> logger;
+        private readonly TenantsHttpClient tenantsHttpClient;
 
         public TransferPrimaryOwnershipHandler(
             IBusPublisher busPublisher,
-            Func<bool, string, RangerUserManager> userManager,
-            ILogger<TransferPrimaryOwnership> logger
+            Func<TenantOrganizationNameModel, RangerUserManager> userManager,
+            ILogger<TransferPrimaryOwnership> logger,
+            TenantsHttpClient tenantsHttpClient
         )
         {
             this.busPublisher = busPublisher;
             this.userManager = userManager;
             this.logger = logger;
+            this.tenantsHttpClient = tenantsHttpClient;
         }
 
-        public async Task HandleAsync(TransferPrimaryOwnership message, ICorrelationContext context)
+        public async Task HandleAsync(TransferPrimaryOwnership command, ICorrelationContext context)
         {
-            logger.LogInformation($"Transfering Primary Ownership of domain '{message.TenantId}' from '{message.CommandingUserEmail}' to '{message.TransferUserEmail}'");
+            logger.LogInformation($"Transfering Primary Ownership of domain '{command.TenantId}' from '{command.CommandingUserEmail}' to '{command.TransferUserEmail}'");
             try
             {
-
-                var localUserManager = userManager(false, message.TenantId);
-
-                var commandingUser = await localUserManager.FindByEmailAsync(message.CommandingUserEmail);
-                var transferUser = await localUserManager.FindByEmailAsync(message.TransferUserEmail);
+                var apiResponse = await tenantsHttpClient.GetTenantByIdAsync<TenantOrganizationNameModel>(command.TenantId);
+                var localUserManager = userManager(apiResponse.Result);
+                var commandingUser = await localUserManager.FindByEmailAsync(command.CommandingUserEmail);
+                var transferUser = await localUserManager.FindByEmailAsync(command.TransferUserEmail);
 
                 if (commandingUser is null)
                 {
@@ -45,7 +48,7 @@ namespace Ranger.Identity.Handlers.Commands
                     throw new RangerException("The recipient of the transfer request was not found.");
                 }
 
-                var tokenResult = await localUserManager.VerifyUserTokenAsync(transferUser, TokenOptions.DefaultProvider, "PrimaryOwnerTransfer", message.Token);
+                var tokenResult = await localUserManager.VerifyUserTokenAsync(transferUser, TokenOptions.DefaultProvider, "PrimaryOwnerTransfer", command.Token);
                 if (tokenResult)
                 {
                     var currentCommandingUserRole = await localUserManager.GetRangerRoleAsync(commandingUser);
@@ -70,7 +73,7 @@ namespace Ranger.Identity.Handlers.Commands
                                     }
                                     else
                                     {
-                                        logger.LogError($"The Primary Owner role was transfered successfully but failed to remove the previous role from the new Primary Owner, {message.TransferUserEmail}. Verify the user does not have a redundant role.");
+                                        logger.LogError($"The Primary Owner role was transfered successfully but failed to remove the previous role from the new Primary Owner, {command.TransferUserEmail}. Verify the user does not have a redundant role.");
                                         throw new RangerException("An unspecified error occurred transfering the domain. Please contant Ranger support for additional assitance.");
                                     }
                                 }

@@ -25,29 +25,7 @@ namespace Ranger.Identity
             this.tenantsClient = tenantsClient;
         }
 
-        public (DbContextOptions<RangerIdentityDbContext> options, TenantOrganizationNameModel databaseUsername) GetDbContextOptionsByDomain(string domain)
-        {
-            try
-            {
-                var apiResponse = this.tenantsClient.GetTenantByDomainAsync<TenantOrganizationNameModel>(domain).Result;
-                this.logger.LogError("Received {StatusCode} when attempting to retrieve the tenant. Cannot construct the tenant specific repository.", apiResponse.StatusCode);
-                throw new ApiException("Failed to retrieve tenant");
-            }
-            catch (ApiException ex)
-            {
-                this.logger.LogError(ex, "An exception occurred retrieving the ContextTenant object from the Tenants service. Cannot construct the tenant specific repository.");
-                throw;
-            }
-        }
-
-        public (DbContextOptions<RangerIdentityDbContext> options, TenantOrganizationNameModel databaseUsername) GetDbContextOptionsByTenantId(string tenantId)
-        {
-            var apiResponse = this.tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(tenantId).Result;
-            this.logger.LogError("Received {StatusCode} when attempting to retrieve the tenant. Cannot construct the tenant specific repository.", apiResponse.StatusCode);
-            throw new ApiException("Failed to retrieve tenant");
-        }
-
-        private (DbContextOptions<RangerIdentityDbContext> options, TenantOrganizationNameModel tenantOrganizationNameModel) getDbContextOptions(TenantOrganizationNameModel tenantOrganizationNameModel)
+        public (DbContextOptions<RangerIdentityDbContext> options, TenantOrganizationNameModel tenantOrganizationNameModel) GetDbContextOptions(TenantOrganizationNameModel tenantOrganizationNameModel)
         {
             NpgsqlConnectionStringBuilder connectionBuilder = new NpgsqlConnectionStringBuilder(cloudSqlOptions.ConnectionString);
             connectionBuilder.Username = tenantOrganizationNameModel.TenantId;

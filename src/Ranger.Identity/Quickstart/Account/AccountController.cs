@@ -24,8 +24,8 @@ namespace IdentityServer4.Quickstart.UI
     [TenantSubdomainRequired]
     public class AccountController : Controller
     {
-        private readonly Func<bool, string, RangerUserManager> userManager;
-        private readonly Func<bool, string, RangerSignInManager> signInManager;
+        private readonly Func<TenantOrganizationNameModel, RangerUserManager> userManager;
+        private readonly Func<TenantOrganizationNameModel, RangerSignInManager> signInManager;
         private readonly IIdentityServerInteractionService _interaction;
         private readonly IClientStore _clientStore;
         private readonly IAuthenticationSchemeProvider _schemeProvider;
@@ -33,9 +33,9 @@ namespace IdentityServer4.Quickstart.UI
         private readonly TenantsHttpClient _tenantsClient;
 
         public AccountController(
-            Func<bool, string, RangerUserManager> userManager,
+            Func<TenantOrganizationNameModel, RangerUserManager> userManager,
             IIdentityServerInteractionService interaction,
-            Func<bool, string, RangerSignInManager> signInManager,
+            Func<TenantOrganizationNameModel, RangerSignInManager> signInManager,
             IClientStore clientStore,
             IAuthenticationSchemeProvider schemeProvider,
             IEventService events,
@@ -107,11 +107,11 @@ namespace IdentityServer4.Quickstart.UI
 
             if (ModelState.IsValid)
             {
-                RangerApiResponse<ContextTenant> apiResponse = null;
+                RangerApiResponse<TenantOrganizationNameModel> apiResponse = null;
                 try
                 {
                     var (_, domain) = GetDomainFromRequestHost();
-                    apiResponse = await _tenantsClient.GetTenantByDomainAsync<ContextTenant>(domain);
+                    apiResponse = await _tenantsClient.GetTenantByDomainAsync<TenantOrganizationNameModel>(domain);
                 }
                 catch (Exception)
                 {
@@ -120,11 +120,11 @@ namespace IdentityServer4.Quickstart.UI
 
                 if (!apiResponse.IsError && apiResponse.Result != null)
                 {
-                    var localSignInManager = signInManager(true, Request.Host.GetDomainFromHost());
+                    var localSignInManager = signInManager(apiResponse.Result);
                     var result = await localSignInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberLogin, lockoutOnFailure: true);
                     if (result.Succeeded)
                     {
-                        var localUserManager = userManager(true, Request.Host.GetDomainFromHost());
+                        var localUserManager = userManager(apiResponse.Result);
                         var user = await localUserManager.FindByEmailAsync(model.Email);
                         if (user != null)
                         {
@@ -217,11 +217,11 @@ namespace IdentityServer4.Quickstart.UI
 
             if (User?.Identity.IsAuthenticated == true)
             {
-                RangerApiResponse<ContextTenant> apiResponse = null;
+                RangerApiResponse<TenantOrganizationNameModel> apiResponse = null;
                 try
                 {
                     var (_, domain) = GetDomainFromRequestHost();
-                    apiResponse = await _tenantsClient.GetTenantByDomainAsync<ContextTenant>(domain);
+                    apiResponse = await _tenantsClient.GetTenantByDomainAsync<TenantOrganizationNameModel>(domain);
                 }
                 catch (Exception)
                 {
@@ -230,7 +230,7 @@ namespace IdentityServer4.Quickstart.UI
 
                 if (!apiResponse.IsError && apiResponse.Result != null)
                 {
-                    var localSignInManager = signInManager(true, Request.Host.GetDomainFromHost());
+                    var localSignInManager = signInManager(apiResponse.Result);
                     // delete local authentication cookie
                     await localSignInManager.SignOutAsync();
                     // raise the logout event

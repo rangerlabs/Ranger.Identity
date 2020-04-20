@@ -24,16 +24,16 @@ namespace Ranger.Identity
     [Authorize(IdentityServerConstants.LocalApi.PolicyName)]
     public class UsersController : ControllerBase
     {
-        private readonly Func<bool, string, RangerUserManager> userManager;
+        private readonly Func<TenantOrganizationNameModel, RangerUserManager> userManager;
         private readonly SubscriptionsHttpClient subscriptionsClient;
         private readonly SignInManager<RangerUser> signInManager;
         private readonly IBusPublisher _busPublisher;
-        private readonly TenantsHttpClient _tenantsClient;
+        private readonly TenantsHttpClient tenantsClient;
         private readonly ILogger<UsersController> logger;
 
         public UsersController(
                 IBusPublisher busPublisher,
-                Func<bool, string, RangerUserManager> userManager,
+                Func<TenantOrganizationNameModel, RangerUserManager> userManager,
                 SubscriptionsHttpClient subscriptionsClient,
                 SignInManager<RangerUser> signInManager,
                 TenantsHttpClient tenantsClient,
@@ -44,7 +44,7 @@ namespace Ranger.Identity
             this.userManager = userManager;
             this.subscriptionsClient = subscriptionsClient;
             this.signInManager = signInManager;
-            this._tenantsClient = tenantsClient;
+            this.tenantsClient = tenantsClient;
             this.logger = logger;
         }
 
@@ -59,7 +59,8 @@ namespace Ranger.Identity
         {
             try
             {
-                var localUserManager = userManager(false, tenantId);
+                var apiResponse = await tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(tenantId);
+                var localUserManager = userManager(apiResponse.Result);
                 var users = await localUserManager.Users.OrderBy(_ => _.LastName).ToListAsync();
                 var userResponse = new List<UserResponseModel>();
                 foreach (var user in users)
@@ -88,7 +89,8 @@ namespace Ranger.Identity
         [HttpPut("/users/{tenantId}/{email}")]
         public async Task<ApiResponse> UserAndAccountUpdate(string tenantId, string email, AccountUpdateModel accountInfoModel)
         {
-            var localUserManager = userManager(false, tenantId);
+            var apiResponse = await tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(tenantId);
+            var localUserManager = userManager(apiResponse.Result);
             RangerUser user = null;
             try
             {
@@ -127,7 +129,8 @@ namespace Ranger.Identity
         {
             try
             {
-                var localUserManager = userManager(false, tenantId);
+                var apiResponse = await tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(tenantId);
+                var localUserManager = userManager(apiResponse.Result);
                 var user = await localUserManager.FindByEmailAsync(email);
                 if (user is null)
                 {
@@ -155,7 +158,8 @@ namespace Ranger.Identity
         {
             try
             {
-                var localUserManager = userManager(false, tenantId);
+                var apiResponse = await tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(tenantId);
+                var localUserManager = userManager(apiResponse.Result);
                 var user = await localUserManager.FindByEmailAsync(email);
                 if (user is null)
                 {
@@ -183,7 +187,8 @@ namespace Ranger.Identity
         [HttpPost("/users/{tenantId}/{email}/password-reset")]
         public async Task<ApiResponse> SetNewPassword(string tenantId, string email, UserConfirmPasswordResetModel userConfirmPasswordResetModel)
         {
-            var localUserManager = userManager(false, tenantId);
+            var apiResponse = await tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(tenantId);
+            var localUserManager = userManager(apiResponse.Result);
 
             RangerUser user = null;
             try
@@ -242,7 +247,8 @@ namespace Ranger.Identity
         [HttpPost("/users/{tenantId}/{email}/email-change")]
         public async Task<ApiResponse> SetNewEmail(string tenantId, string email, UserConfirmEmailChangeModel userConfirmEmailChangeModel)
         {
-            var localUserManager = userManager(false, tenantId);
+            var apiResponse = await tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(tenantId);
+            var localUserManager = userManager(apiResponse.Result);
             RangerUser user = null;
             try
             {
@@ -314,7 +320,8 @@ namespace Ranger.Identity
         [HttpPut("/users/{tenantId}/{email}/email-change")]
         public async Task<ApiResponse> PutEmailChangeRequest(string tenantId, string email, EmailChangeModel emailChangeModel)
         {
-            var localUserManager = userManager(false, tenantId);
+            var apiResponse = await tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(tenantId);
+            var localUserManager = userManager(apiResponse.Result);
             RangerUser user = null;
             RangerUser conflictingUser = null;
             try
@@ -363,7 +370,8 @@ namespace Ranger.Identity
         [HttpPut("/users/{tenantId}/{email}/confirm")]
         public async Task<ApiResponse> ConfirmNewUser(string tenantId, string email, UserConfirmModel userConfirmModel)
         {
-            var localUserManager = userManager(false, tenantId);
+            var apiResponse = await tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(tenantId);
+            var localUserManager = userManager(apiResponse.Result);
             try
             {
                 var user = await localUserManager.FindByIdAsync(email);
@@ -410,7 +418,8 @@ namespace Ranger.Identity
         {
             try
             {
-                var localUserManager = userManager(false, tenantId);
+                var apiResponse = await tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(tenantId);
+                var localUserManager = userManager(apiResponse.Result);
                 var user = await localUserManager.FindByEmailAsync(email);
                 if (user is null)
                 {
@@ -446,7 +455,8 @@ namespace Ranger.Identity
         public async Task<ApiResponse> DeleteAccount(string tenantId, [FromRoute] string email, AccountDeleteModel accountDeleteModel)
         {
             var apiResponse = await subscriptionsClient.DecrementResource(tenantId, ResourceEnum.Account);
-            var localUserManager = userManager(false, tenantId);
+            var tenantApiResponse = await tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(tenantId);
+            var localUserManager = userManager(tenantApiResponse.Result);
             RangerUser user = null;
             try
             {
@@ -487,7 +497,8 @@ namespace Ranger.Identity
         public async Task<ApiResponse> DeleteUserByEmail(string tenantId, string email, DeleteUserModel deleteUserModel)
         {
             var apiResponse = await subscriptionsClient.DecrementResource(tenantId, ResourceEnum.Account);
-            var localUserManager = userManager(false, tenantId);
+            var tenantApiResponse = await tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(tenantId);
+            var localUserManager = userManager(tenantApiResponse.Result);
             RangerUser user = null;
             try
             {
