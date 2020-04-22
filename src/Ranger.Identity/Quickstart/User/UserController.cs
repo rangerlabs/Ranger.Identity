@@ -73,7 +73,7 @@ namespace Ranger.Identity
             catch (Exception ex)
             {
                 this.logger.LogError(ex, "An error occurred getting a user role");
-                throw new ApiException(new RangerApiError("Failed to get user role"), statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to get user role", statusCode: StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -99,12 +99,12 @@ namespace Ranger.Identity
             catch (Exception ex)
             {
                 this.logger.LogError(ex, "An error occurred retrieving the user.");
-                throw new ApiException(new RangerApiError("Failed to update account"), statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to update account", statusCode: StatusCodes.Status500InternalServerError);
             }
             if (user is null)
             {
 
-                throw new ApiException(new RangerApiError("No user was found for the proivded email"), StatusCodes.Status404NotFound);
+                throw new ApiException("No user was found for the proivded email", StatusCodes.Status404NotFound);
             }
             user.LastName = accountInfoModel.LastName;
             user.FirstName = accountInfoModel.FirstName;
@@ -112,7 +112,7 @@ namespace Ranger.Identity
             if (!result.Succeeded)
             {
                 logger.LogError($"Failed to update user {email}. Errors: {String.Join(';', result.Errors.Select(_ => _.Description).ToList())}.");
-                throw new ApiException(new RangerApiError("Failed to update account"), statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to update account", statusCode: StatusCodes.Status500InternalServerError);
             }
             return new ApiResponse("Successfully updated user account");
         }
@@ -134,7 +134,7 @@ namespace Ranger.Identity
                 var user = await localUserManager.FindByEmailAsync(email);
                 if (user is null)
                 {
-                    throw new ApiException(new RangerApiError("No user was found for the proivded email"), StatusCodes.Status404NotFound);
+                    throw new ApiException("No user was found for the proivded email", StatusCodes.Status404NotFound);
                 }
                 var role = await localUserManager.GetRolesAsync(user);
                 return new ApiResponse("Successfully retrieved user", MapUserToUserResponse(user, role.First()));
@@ -142,7 +142,7 @@ namespace Ranger.Identity
             catch (Exception ex)
             {
                 this.logger.LogError(ex, "An error occurred getting a user");
-                throw new ApiException(new RangerApiError("Failed to get user"), statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to get user", statusCode: StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -163,7 +163,7 @@ namespace Ranger.Identity
                 var user = await localUserManager.FindByEmailAsync(email);
                 if (user is null)
                 {
-                    throw new ApiException(new RangerApiError("No user was found for the proivded email"), StatusCodes.Status404NotFound);
+                    throw new ApiException("No user was found for the proivded email", StatusCodes.Status404NotFound);
                 }
                 var role = await localUserManager.GetRolesAsync(user);
                 return new ApiResponse("Success retrieved user role", role.First());
@@ -171,7 +171,7 @@ namespace Ranger.Identity
             catch (Exception ex)
             {
                 this.logger.LogError(ex, "An error occurred getting a user role");
-                throw new ApiException(new RangerApiError("Failed to get user role"), statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to get user role", statusCode: StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -198,19 +198,19 @@ namespace Ranger.Identity
             catch (Exception ex)
             {
                 this.logger.LogError(ex, "An error occurred retrieving the users");
-                throw new ApiException(new RangerApiError("Failed to set password"), statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to set password", statusCode: StatusCodes.Status500InternalServerError);
             }
 
             if (user is null)
             {
-                throw new ApiException(new RangerApiError("No user was found for the proivded email"), StatusCodes.Status404NotFound);
+                throw new ApiException("No user was found for the proivded email", StatusCodes.Status404NotFound);
             }
 
             var resetResult = await localUserManager.ResetPasswordAsync(user, userConfirmPasswordResetModel.Token, userConfirmPasswordResetModel.NewPassword);
             if (!resetResult.Succeeded)
             {
                 logger.LogError($"Failed to set password for user {email}. Errors: {String.Join(';', resetResult.Errors.Select(_ => _.Description).ToList())}");
-                throw new ApiException(new RangerApiError("Failed to set new password"), StatusCodes.Status400BadRequest);
+                throw new ApiException("Failed to set new password", StatusCodes.Status400BadRequest);
             }
 
             //TODO: Assess Security implications of a user resetting their password before being confirmed
@@ -221,7 +221,7 @@ namespace Ranger.Identity
                 if (!updateResult.Succeeded)
                 {
                     logger.LogError($"Failed to confirm user {email} after setting password. Errors: {String.Join(';', resetResult.Errors.Select(_ => _.Description).ToList())}");
-                    throw new ApiException(new RangerApiError("Failed to confirm user"), statusCode: StatusCodes.Status500InternalServerError);
+                    throw new ApiException("Failed to confirm user", statusCode: StatusCodes.Status500InternalServerError);
                 }
             }
 
@@ -229,7 +229,7 @@ namespace Ranger.Identity
             if (!stampResult.Succeeded)
             {
                 logger.LogError($"Failed to reset security stamp for user {email}. Errors: {String.Join(';', resetResult.Errors.Select(_ => _.Description).ToList())}");
-                throw new ApiException(new RangerApiError("Failed to update security stamp"), statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to update security stamp", statusCode: StatusCodes.Status500InternalServerError);
             }
             return new ApiResponse("Successfully set new password");
         }
@@ -257,12 +257,12 @@ namespace Ranger.Identity
             catch (Exception ex)
             {
                 this.logger.LogError(ex, "An error occurred retrieving the users");
-                throw new ApiException(new RangerApiError("Failed to set password"), statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to set password", statusCode: StatusCodes.Status500InternalServerError);
             }
 
             if (user is null)
             {
-                throw new ApiException(new RangerApiError("No user was found for the proivded email"), StatusCodes.Status404NotFound);
+                throw new ApiException("No user was found for the proivded email", StatusCodes.Status404NotFound);
             }
 
             var changeResult = await localUserManager.ChangeEmailAsync(user, user.UnconfirmedEmail, userConfirmEmailChangeModel.Token);
@@ -271,7 +271,7 @@ namespace Ranger.Identity
             {
                 var message = "Ensure the provided current email and token are correct.";
                 logger.LogError(message);
-                throw new ApiException(new RangerApiError(message), StatusCodes.Status400BadRequest);
+                throw new ApiException(message, StatusCodes.Status400BadRequest);
             }
 
             user.UserName = user.UnconfirmedEmail;
@@ -282,7 +282,7 @@ namespace Ranger.Identity
                 if (!updateResult.Succeeded)
                 {
                     logger.LogError($"Failed to confirm user {email}. Errors: {String.Join(';', updateResult.Errors.Select(_ => _.Description).ToList())}");
-                    throw new ApiException(new RangerApiError("Failed to confirm user"), statusCode: StatusCodes.Status500InternalServerError);
+                    throw new ApiException("Failed to confirm user", statusCode: StatusCodes.Status500InternalServerError);
                 }
             }
             //TODO: Can this be determined from changeResult?
@@ -292,16 +292,16 @@ namespace Ranger.Identity
                 if (postgresException.SqlState == "23505")
                 {
                     var message = "The requested email is already in use.";
-                    throw new ApiException(new RangerApiError(message), StatusCodes.Status409Conflict);
+                    throw new ApiException(message, StatusCodes.Status409Conflict);
                 }
-                throw new ApiException(new RangerApiError("Failed to update user email"), statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to update user email", statusCode: StatusCodes.Status500InternalServerError);
             }
 
             var stampResult = await localUserManager.UpdateSecurityStampAsync(user);
             if (!stampResult.Succeeded)
             {
                 logger.LogError($"Failed to reset security stamp for user {email}. Errors: {String.Join(';', stampResult.Errors.Select(_ => _.Description).ToList())}");
-                throw new ApiException(new RangerApiError("Failed to update security stamp"), statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to update security stamp", statusCode: StatusCodes.Status500InternalServerError);
             }
             return new ApiResponse("Success set new email");
         }
@@ -332,17 +332,17 @@ namespace Ranger.Identity
             catch (Exception ex)
             {
                 this.logger.LogError(ex, "An error occurred retrieving the users");
-                throw new ApiException(new RangerApiError("Failed to request email change"), statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to request email change", statusCode: StatusCodes.Status500InternalServerError);
             }
             if (user is null)
             {
-                throw new ApiException(new RangerApiError("No user was found for the proivded email"), StatusCodes.Status404NotFound);
+                throw new ApiException("No user was found for the proivded email", StatusCodes.Status404NotFound);
             }
             if (conflictingUser != null)
             {
                 var message = "The requested email address is unavailable";
                 logger.LogDebug(message);
-                throw new ApiException(new RangerApiError(message), StatusCodes.Status409Conflict);
+                throw new ApiException(message, StatusCodes.Status409Conflict);
             }
 
             user.UnconfirmedEmail = emailChangeModel.Email;
@@ -350,7 +350,7 @@ namespace Ranger.Identity
             if (!updateResult.Succeeded)
             {
                 logger.LogError($"Failed to request email change for user {email}. Errors: {String.Join(';', updateResult.Errors.Select(_ => _.Description).ToList())}");
-                throw new ApiException(new RangerApiError("Failed to request email change"), statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to request email change", statusCode: StatusCodes.Status500InternalServerError);
             }
             var token = HttpUtility.UrlEncode(await localUserManager.GenerateChangeEmailTokenAsync(user, emailChangeModel.Email));
             _busPublisher.Send(new SendChangeEmailEmail(user.FirstName, emailChangeModel.Email, tenantId, user.Id, localUserManager.contextTenant.OrganizationName, token), HttpContext.GetCorrelationContextFromHttpContext<SendResetPasswordEmail>(tenantId, email));
@@ -377,7 +377,7 @@ namespace Ranger.Identity
                 var user = await localUserManager.FindByIdAsync(email);
                 if (user is null)
                 {
-                    throw new ApiException(new RangerApiError("No user was found for the proivded email"), StatusCodes.Status404NotFound);
+                    throw new ApiException("No user was found for the proivded email", StatusCodes.Status404NotFound);
                 }
 
                 var confirmResult = await localUserManager.ConfirmEmailAsync(user, userConfirmModel.Token);
@@ -385,20 +385,20 @@ namespace Ranger.Identity
                 {
                     var message = "Failed to confirm the user";
                     logger.LogError($"{message} Errors: {String.Join(';', confirmResult.Errors.Select(_ => _.Description).ToList())}");
-                    throw new ApiException(new RangerApiError(message), StatusCodes.Status400BadRequest);
+                    throw new ApiException(message, StatusCodes.Status400BadRequest);
                 }
 
                 var passwordSetResult = await localUserManager.ChangePasswordAsync(user, GlobalConfig.TempPassword, userConfirmModel.NewPassword);
                 if (!passwordSetResult.Succeeded)
                 {
                     logger.LogError($"Failed to set password for user '{user.Email}' after confirming their account. Errors: {String.Join(';', passwordSetResult.Errors.Select(_ => _.Description).ToList())}");
-                    throw new ApiException(new RangerApiError("The email address was confirmed, but failed to set password"), statusCode: StatusCodes.Status500InternalServerError);
+                    throw new ApiException("The email address was confirmed, but failed to set password", statusCode: StatusCodes.Status500InternalServerError);
                 }
             }
             catch (Exception ex)
             {
                 this.logger.LogError(ex, "An error occurred confirming the email address");
-                throw new ApiException(new RangerApiError("Failed to confirm email address"), statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to confirm email address", statusCode: StatusCodes.Status500InternalServerError);
             }
 
             return new ApiResponse("Successfully confirmed new user", true);
@@ -423,7 +423,7 @@ namespace Ranger.Identity
                 var user = await localUserManager.FindByEmailAsync(email);
                 if (user is null)
                 {
-                    throw new ApiException(new RangerApiError("No user was found for the proivded email"), StatusCodes.Status404NotFound);
+                    throw new ApiException("No user was found for the proivded email", StatusCodes.Status404NotFound);
                 }
                 if (await localUserManager.CheckPasswordAsync(user, passwordResetModel.Password))
                 {
@@ -433,12 +433,12 @@ namespace Ranger.Identity
                 }
                 var message = "The password provided was invalid";
                 logger.LogDebug(message);
-                throw new ApiException(new RangerApiError(message), StatusCodes.Status400BadRequest);
+                throw new ApiException(message, StatusCodes.Status400BadRequest);
             }
             catch (Exception ex)
             {
                 this.logger.LogError(ex, "An error occurred getting a user role");
-                throw new ApiException(new RangerApiError("Failed to get user role"), statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to get user role", statusCode: StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -466,20 +466,20 @@ namespace Ranger.Identity
                 {
                     var message = "The password provided was invalid";
                     logger.LogDebug(message);
-                    throw new ApiException(new RangerApiError(message), StatusCodes.Status400BadRequest);
+                    throw new ApiException(message, StatusCodes.Status400BadRequest);
                 }
             }
             catch (Exception ex)
             {
                 this.logger.LogError(ex, "An error occurred retrieving the user or users roles.");
-                throw new ApiException(new RangerApiError("Failed to delete account"), statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to delete account", statusCode: StatusCodes.Status500InternalServerError);
             }
 
             var deleteResult = await localUserManager.DeleteAsync(user);
             if (!deleteResult.Succeeded)
             {
                 logger.LogError($"Failed to delete account {email}. Errors: {String.Join(';', deleteResult.Errors.Select(_ => _.Description).ToList())}.");
-                throw new ApiException(new RangerApiError("Failed to update account"), statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to update account", statusCode: StatusCodes.Status500InternalServerError);
             }
             return new ApiResponse("Success deleted account");
         }
@@ -507,23 +507,23 @@ namespace Ranger.Identity
                 if (!await AssignmentValidator.ValidateAsync(commandingUser, user, localUserManager))
                 {
                     this.logger.LogWarning("An attempt to delete a user was made from a forbidden commanding user");
-                    throw new ApiException(new RangerApiError("You are forbidden from performing this action"), StatusCodes.Status403Forbidden);
+                    throw new ApiException("You are forbidden from performing this action", StatusCodes.Status403Forbidden);
                 }
             }
             catch (Exception ex)
             {
                 this.logger.LogError(ex, "An error occurred retrieving the user or users roles.");
-                throw new ApiException(new RangerApiError("Failed to delete user"), statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to delete user", statusCode: StatusCodes.Status500InternalServerError);
             }
             if (user is null)
             {
-                throw new ApiException(new RangerApiError("No user was found for the proivded email"), StatusCodes.Status404NotFound);
+                throw new ApiException("No user was found for the proivded email", StatusCodes.Status404NotFound);
             }
             var deleteResult = await localUserManager.DeleteAsync(user);
             if (!deleteResult.Succeeded)
             {
                 logger.LogError($"Failed to delete user {email}. Errors: {String.Join(';', deleteResult.Errors.Select(_ => _.Description).ToList())}");
-                throw new ApiException(new RangerApiError("Failed to delete user"), statusCode: StatusCodes.Status500InternalServerError);
+                throw new ApiException("Failed to delete user", statusCode: StatusCodes.Status500InternalServerError);
             }
             return new ApiResponse("Successfully deleted user");
         }

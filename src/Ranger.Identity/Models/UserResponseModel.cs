@@ -14,7 +14,5 @@ namespace Ranger.Identity
         public bool EmailConfirmed { get; set; }
 
         public string Role { get; set; }
-
-        public IEnumerable<string> AuthorizedProjects { get; set; }
     }
 }

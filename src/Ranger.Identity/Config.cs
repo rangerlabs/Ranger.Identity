@@ -178,8 +178,8 @@ namespace Ranger.Identity
             });
             clients.Add(new Client
             {
-                ClientId = "SubscriptionsHttpClient ",
-                ClientName = "SubscriptionsHttpClient ",
+                ClientId = "SubscriptionsHttpClient",
+                ClientName = "SubscriptionsHttpClient",
                 AccessTokenLifetime = 1800, //30 minutes
                 AllowedGrantTypes = GrantTypes.ClientCredentials,
                 ClientSecrets = {

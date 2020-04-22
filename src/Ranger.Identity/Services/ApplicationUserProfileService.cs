@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using AutoWrapper.Wrappers;
 using IdentityServer4.Extensions;
 using IdentityServer4.Models;
 using IdentityServer4.Services;
@@ -45,6 +46,7 @@ namespace Ranger.Identity
                 context.Caller);
 
             var domain = contextAccessor.HttpContext.Request.Host.GetDomainFromHost();
+
             var tenantApiResponse = await tenantsClient.GetTenantByDomainAsync<TenantOrganizationNameModel>(domain);
             var localUserManager = userManager(tenantApiResponse.Result);
             var user = await localUserManager.FindByIdAsync(context.Subject.GetSubjectId());
@@ -53,8 +55,7 @@ namespace Ranger.Identity
                 new Claim ("firstName", user.FirstName),
                 new Claim ("lastName", user.LastName),
                 new Claim ("domain", domain),
-                new Claim("authorizedProjects", JsonConvert.SerializeObject(await projectsClient.GetProjectIdsForUser(tenantApiResponse.Result.TenantId, user.Email)))
-            };
+        };
 
             var role = await localUserManager.GetRolesAsync(user);
             var userRole = ((RolesEnum)Enum.Parse(typeof(RolesEnum), role.First())).GetCascadedRoles();
