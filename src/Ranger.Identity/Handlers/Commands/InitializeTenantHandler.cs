@@ -27,18 +27,18 @@ namespace Ranger.Identity.Handlers.Commands
         public async Task HandleAsync(InitializeTenant command, ICorrelationContext context)
         {
             await this.loginRoleRepository.CreateTenantLoginRole(command.TenantId, command.DatabasePassword);
-            logger.LogInformation($"New tenant login '{command.TenantId}' added to Identity database.");
+            logger.LogInformation($"New tenant login '{command.TenantId}' added to Identity database");
 
             var tables = Enum.GetNames(typeof(RowLevelSecureTablesEnum)).Concat(Enum.GetNames(typeof(PublicTablesEnum)));
             foreach (var table in tables)
             {
-                logger.LogInformation($"Setting tenant login permissions on table: '{table}'.");
+                logger.LogInformation($"Setting tenant login permissions on table: '{table}'");
                 await this.loginRoleRepository.GrantTenantLoginRoleTablePermissions(command.TenantId, table);
             }
             logger.LogInformation("Setting tenant login sequence permissions");
             await this.loginRoleRepository.GrantTenantLoginRoleSequencePermissions(command.TenantId);
 
-            logger.LogInformation($"New Identity tenant initialized successfully.");
+            logger.LogInformation($"New Identity tenant initialized successfully");
             busPublisher.Publish(new TenantInitialized(), context);
         }
     }

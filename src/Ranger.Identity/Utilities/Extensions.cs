@@ -33,12 +33,12 @@ namespace Ranger.Identity
         {
             if (string.IsNullOrWhiteSpace(domain))
             {
-                throw new ArgumentException($"{nameof(domain)} was null or whitespace.");
+                throw new ArgumentException($"{nameof(domain)} was null or whitespace");
             }
 
             if (string.IsNullOrWhiteSpace(email))
             {
-                throw new ArgumentException($"{nameof(email)} was null or whitespace.");
+                throw new ArgumentException($"{nameof(email)} was null or whitespace");
             }
 
             return CorrelationContext.Create<T>(
@@ -60,7 +60,7 @@ namespace Ranger.Identity
 
             if (roles.Count > 1)
             {
-                throw new ArgumentOutOfRangeException($"Assignor '{rangerUser.Email}' is assigned to more than one role.");
+                throw new ArgumentOutOfRangeException($"Assignor '{rangerUser.Email}' is assigned to more than one role");
             }
             return Enum.Parse<RolesEnum>(roles[0], true);
         }

@@ -29,17 +29,17 @@ namespace Ranger.Identity.Handlers.Commands
     //         var tables = Enum.GetNames(typeof(RowLevelSecureTablesEnum)).Concat(Enum.GetNames(typeof(PublicTablesEnum)));
     //         foreach (var table in tables)
     //         {
-    //             logger.LogInformation($"Revoking tenant '{command.TenantId}' permissions on table: '{table}'.");
+    //             logger.LogInformation($"Revoking tenant '{command.TenantId}' permissions on table: '{table}'");
     //             await this.loginRoleRepository.RevokeTenantLoginRoleTablePermissions(command.TenantId, table);
     //         }
 
     //         logger.LogInformation("Revoking tenant '{command.TenantId}' sequence permissions");
     //         await this.loginRoleRepository.RevokeTenantLoginRoleSequencePermissions(command.TenantId);
 
-    //         logger.LogInformation($"Dropping tenant '{command.TenantId}' from Identity database.");
+    //         logger.LogInformation($"Dropping tenant '{command.TenantId}' from Identity database");
     //         await this.loginRoleRepository.DropTenantLoginRole(command.TenantId);
 
-    //         logger.LogInformation($"Identity tenant dropped successfully.");
+    //         logger.LogInformation($"Identity tenant dropped successfully");
     //     }
     // }
 }

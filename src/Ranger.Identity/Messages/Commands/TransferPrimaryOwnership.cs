@@ -12,21 +12,21 @@ namespace Ranger.Identity
         {
             if (string.IsNullOrWhiteSpace(commandingUserEmail))
             {
-                throw new System.ArgumentException($"{nameof(commandingUserEmail)} was null or whitespace.");
+                throw new System.ArgumentException($"{nameof(commandingUserEmail)} was null or whitespace");
             }
 
             if (string.IsNullOrWhiteSpace(transferUserEmail))
             {
-                throw new System.ArgumentException($"{nameof(transferUserEmail)} was null or whitespace.");
+                throw new System.ArgumentException($"{nameof(transferUserEmail)} was null or whitespace");
             }
 
             if (string.IsNullOrWhiteSpace(tenantId))
             {
-                throw new System.ArgumentException($"{nameof(tenantId)} was null or whitespace.");
+                throw new System.ArgumentException($"{nameof(tenantId)} was null or whitespace");
             }
             if (string.IsNullOrWhiteSpace(token))
             {
-                throw new System.ArgumentException($"{nameof(token)} was null or whitespace.");
+                throw new System.ArgumentException($"{nameof(token)} was null or whitespace");
             }
 
             CommandingUserEmail = commandingUserEmail;

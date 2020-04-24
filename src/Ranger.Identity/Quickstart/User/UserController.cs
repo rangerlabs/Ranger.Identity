@@ -98,7 +98,7 @@ namespace Ranger.Identity
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "An error occurred retrieving the user.");
+                this.logger.LogError(ex, "An error occurred retrieving the user");
                 throw new ApiException("Failed to update account", statusCode: StatusCodes.Status500InternalServerError);
             }
             if (user is null)
@@ -111,7 +111,7 @@ namespace Ranger.Identity
             var result = await localUserManager.UpdateAsync(user);
             if (!result.Succeeded)
             {
-                logger.LogError($"Failed to update user {email}. Errors: {String.Join(';', result.Errors.Select(_ => _.Description).ToList())}.");
+                logger.LogError($"Failed to update user {email}. Errors: {String.Join(';', result.Errors.Select(_ => _.Description).ToList())}");
                 throw new ApiException("Failed to update account", statusCode: StatusCodes.Status500InternalServerError);
             }
             return new ApiResponse("Successfully updated user account");
@@ -269,7 +269,7 @@ namespace Ranger.Identity
 
             if (!changeResult.Succeeded)
             {
-                var message = "Ensure the provided current email and token are correct.";
+                var message = "Ensure the provided current email and token are correct";
                 logger.LogError(message);
                 throw new ApiException(message, StatusCodes.Status400BadRequest);
             }
@@ -291,7 +291,7 @@ namespace Ranger.Identity
                 var postgresException = ex.InnerException as PostgresException;
                 if (postgresException.SqlState == "23505")
                 {
-                    var message = "The requested email is already in use.";
+                    var message = "The requested email is already in use";
                     throw new ApiException(message, StatusCodes.Status409Conflict);
                 }
                 throw new ApiException("Failed to update user email", statusCode: StatusCodes.Status500InternalServerError);
@@ -471,14 +471,14 @@ namespace Ranger.Identity
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "An error occurred retrieving the user or users roles.");
+                this.logger.LogError(ex, "An error occurred retrieving the user or users roles");
                 throw new ApiException("Failed to delete account", statusCode: StatusCodes.Status500InternalServerError);
             }
 
             var deleteResult = await localUserManager.DeleteAsync(user);
             if (!deleteResult.Succeeded)
             {
-                logger.LogError($"Failed to delete account {email}. Errors: {String.Join(';', deleteResult.Errors.Select(_ => _.Description).ToList())}.");
+                logger.LogError($"Failed to delete account {email}. Errors: {String.Join(';', deleteResult.Errors.Select(_ => _.Description).ToList())}");
                 throw new ApiException("Failed to update account", statusCode: StatusCodes.Status500InternalServerError);
             }
             return new ApiResponse("Success deleted account");
@@ -512,7 +512,7 @@ namespace Ranger.Identity
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "An error occurred retrieving the user or users roles.");
+                this.logger.LogError(ex, "An error occurred retrieving the user or users roles");
                 throw new ApiException("Failed to delete user", statusCode: StatusCodes.Status500InternalServerError);
             }
             if (user is null)

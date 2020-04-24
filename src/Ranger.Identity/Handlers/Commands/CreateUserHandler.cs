@@ -32,7 +32,7 @@ namespace Ranger.Identity
 
         public async Task HandleAsync(CreateUser command, ICorrelationContext context)
         {
-            logger.LogInformation($"Creating user '{command.Email}' for tenant with domain '{command.TenantId}'.");
+            logger.LogInformation($"Creating user '{command.Email}' for tenant with domain '{command.TenantId}'");
 
             var apiResponse = await tenantsHttpClient.GetTenantByIdAsync<TenantOrganizationNameModel>(command.TenantId);
             var localUserManager = userManager(apiResponse.Result);
@@ -57,7 +57,7 @@ namespace Ranger.Identity
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to create user.");
+                logger.LogError(ex, "Failed to create user");
                 throw;
             }
 
@@ -65,9 +65,9 @@ namespace Ranger.Identity
             {
                 if (createResult.Errors.First().Code == "DuplicateUserName")
                 {
-                    throw new RangerException("The email address is already taken.");
+                    throw new RangerException("The email address is already taken");
                 }
-                throw new RangerException("Failed to create user.");
+                throw new RangerException("Failed to create user");
             }
 
             var emailToken = HttpUtility.UrlEncode(await localUserManager.GenerateEmailConfirmationTokenAsync(user));

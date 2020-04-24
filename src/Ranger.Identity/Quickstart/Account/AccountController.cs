@@ -115,7 +115,7 @@ namespace IdentityServer4.Quickstart.UI
                 }
                 catch (Exception)
                 {
-                    ModelState.AddModelError(string.Empty, "An error occurred logging the user in.");
+                    ModelState.AddModelError(string.Empty, "An error occurred logging the user in");
                 }
 
                 if (!apiResponse.IsError && apiResponse.Result != null)
@@ -176,7 +176,7 @@ namespace IdentityServer4.Quickstart.UI
                 }
                 else
                 {
-                    ModelState.AddModelError(string.Empty, "An server error occurred logging the user in.");
+                    ModelState.AddModelError(string.Empty, "An server error occurred logging the user in");
                 }
             }
 
@@ -225,7 +225,7 @@ namespace IdentityServer4.Quickstart.UI
                 }
                 catch (Exception)
                 {
-                    ModelState.AddModelError(string.Empty, "An error occurred logging the user out.");
+                    ModelState.AddModelError(string.Empty, "An error occurred logging the user out");
                 }
 
                 if (!apiResponse.IsError && apiResponse.Result != null)

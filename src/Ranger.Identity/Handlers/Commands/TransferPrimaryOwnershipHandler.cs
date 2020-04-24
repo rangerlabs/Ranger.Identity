@@ -41,11 +41,11 @@ namespace Ranger.Identity.Handlers.Commands
 
                 if (commandingUser is null)
                 {
-                    throw new RangerException("The user requesting the transfer was not found.");
+                    throw new RangerException("The user requesting the transfer was not found");
                 }
                 if (transferUser is null)
                 {
-                    throw new RangerException("The recipient of the transfer request was not found.");
+                    throw new RangerException("The recipient of the transfer request was not found");
                 }
 
                 var tokenResult = await localUserManager.VerifyUserTokenAsync(transferUser, TokenOptions.DefaultProvider, "PrimaryOwnerTransfer", command.Token);
@@ -73,65 +73,65 @@ namespace Ranger.Identity.Handlers.Commands
                                     }
                                     else
                                     {
-                                        logger.LogError($"The Primary Owner role was transfered successfully but failed to remove the previous role from the new Primary Owner, {command.TransferUserEmail}. Verify the user does not have a redundant role.");
-                                        throw new RangerException("An unspecified error occurred transfering the domain. Please contant Ranger support for additional assitance.");
+                                        logger.LogError($"The Primary Owner role was transfered successfully but failed to remove the previous role from the new Primary Owner, {command.TransferUserEmail}. Verify the user does not have a redundant role");
+                                        throw new RangerException("An unspecified error occurred transfering the domain. Please contant Ranger support for additional assitance");
                                     }
                                 }
                                 else
                                 {
-                                    logger.LogWarning("Failed to transfer user to the Primary Owner role. Attempting to revert transfer.");
+                                    logger.LogWarning("Failed to transfer user to the Primary Owner role. Attempting to revert transfer");
                                     var undoToPrimaryOwner = await localUserManager.AddToRoleAsync(commandingUser, Enum.GetName(typeof(RolesEnum), RolesEnum.PrimaryOwner));
                                     if (undoToPrimaryOwner.Succeeded)
                                     {
                                         var undoFromOwner = await localUserManager.RemoveFromRoleAsync(commandingUser, Enum.GetName(typeof(RolesEnum), RolesEnum.Owner));
                                         if (undoToPrimaryOwner.Succeeded)
                                         {
-                                            logger.LogError("Failed to remove un-transfered Primary Owner from additional Owner role. Verify the user does not have a redundant role.");
-                                            throw new RangerException("Failed transfering ownership of the domain.");
+                                            logger.LogError("Failed to remove un-transfered Primary Owner from additional Owner role. Verify the user does not have a redundant role");
+                                            throw new RangerException("Failed transfering ownership of the domain");
                                         }
                                     }
                                     else
                                     {
-                                        logger.LogError("Failed to un-transfer former Primary Owner from Owner back to Primary Owner.");
-                                        throw new RangerException("Failed transfering ownership of the domain.");
+                                        logger.LogError("Failed to un-transfer former Primary Owner from Owner back to Primary Owner");
+                                        throw new RangerException("Failed transfering ownership of the domain");
                                     }
                                 }
                             }
                             else
                             {
-                                logger.LogWarning("Successfully added the Primary Owner to the Owner role but failed to remove the Primary Owner role. Attempting to remove the Owner role.");
+                                logger.LogWarning("Successfully added the Primary Owner to the Owner role but failed to remove the Primary Owner role. Attempting to remove the Owner role");
                                 var fromOwnerRole = await localUserManager.RemoveFromRoleAsync(commandingUser, Enum.GetName(typeof(RolesEnum), RolesEnum.Owner));
                                 if (fromOwnerRole.Succeeded)
                                 {
-                                    logger.LogWarning("The Primary Owner was succcesfully re-added to the Primary Owner role from the Owner role.");
-                                    throw new RangerException("Failed transfering ownership of the domain.");
+                                    logger.LogWarning("The Primary Owner was succcesfully re-added to the Primary Owner role from the Owner role");
+                                    throw new RangerException("Failed transfering ownership of the domain");
                                 }
                                 else
                                 {
-                                    logger.LogError("Failed to add the Primary Owner to the Owner role and could not revert them to the exclusive Primary Owner role.");
-                                    throw new RangerException("Failed transfering ownership of the domain.");
+                                    logger.LogError("Failed to add the Primary Owner to the Owner role and could not revert them to the exclusive Primary Owner role");
+                                    throw new RangerException("Failed transfering ownership of the domain");
                                 }
                             }
                         }
                         else
                         {
-                            throw new RangerException("Failed to assign the Primary Owner to the Owner role.");
+                            throw new RangerException("Failed to assign the Primary Owner to the Owner role");
                         }
                     }
                     else
                     {
-                        throw new RangerException("The user executing the transfer request is not in the Primary Owner role.");
+                        throw new RangerException("The user executing the transfer request is not in the Primary Owner role");
                     }
                 }
                 else
                 {
-                    throw new RangerException("The token was invalid for the transfer.");
+                    throw new RangerException("The token was invalid for the transfer");
                 }
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to transfer the Primary Owner role. The project's role integrity may be compromised!");
-                throw new RangerException("Failed to assign the Primary Owner to the Owner role.");
+                throw new RangerException("Failed to assign the Primary Owner to the Owner role");
             }
         }
     }

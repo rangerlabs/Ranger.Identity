@@ -18,32 +18,32 @@ namespace Ranger.Identity
         {
             if (string.IsNullOrEmpty(tenantId))
             {
-                throw new System.ArgumentException($"{nameof(tenantId)} was null or whitespace.");
+                throw new System.ArgumentException($"{nameof(tenantId)} was null or whitespace");
             }
 
             if (string.IsNullOrEmpty(email))
             {
-                throw new System.ArgumentException($"{nameof(email)} was null or whitespace.");
+                throw new System.ArgumentException($"{nameof(email)} was null or whitespace");
             }
 
             if (string.IsNullOrEmpty(firstName))
             {
-                throw new System.ArgumentException($"{nameof(firstName)} was null or whitespace.");
+                throw new System.ArgumentException($"{nameof(firstName)} was null or whitespace");
             }
 
             if (string.IsNullOrEmpty(lastName))
             {
-                throw new System.ArgumentException($"{nameof(lastName)} was null or whitespace.");
+                throw new System.ArgumentException($"{nameof(lastName)} was null or whitespace");
             }
 
             if (string.IsNullOrEmpty(role))
             {
-                throw new System.ArgumentException($"{nameof(role)} was null or whitespace.");
+                throw new System.ArgumentException($"{nameof(role)} was null or whitespace");
             }
 
             if (string.IsNullOrEmpty(commandingUserEmail))
             {
-                throw new System.ArgumentException($"{nameof(commandingUserEmail)} was null or whitespace.");
+                throw new System.ArgumentException($"{nameof(commandingUserEmail)} was null or whitespace");
             }
 
             this.TenantId = tenantId;

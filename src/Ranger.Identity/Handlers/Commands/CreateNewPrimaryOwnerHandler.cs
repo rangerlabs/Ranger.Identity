@@ -35,7 +35,7 @@ namespace Ranger.Identity
 
         public async Task HandleAsync(CreateNewPrimaryOwner command, ICorrelationContext context)
         {
-            logger.LogInformation($"Creating new tenant owner '{command.Email}' for tenant with domain '{command.TenantId}'.");
+            logger.LogInformation($"Creating new tenant owner '{command.Email}' for tenant with domain '{command.TenantId}'");
             var apiResponse = await _tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(command.TenantId);
             var localUserManager = userManager(apiResponse.Result);
 
@@ -56,12 +56,12 @@ namespace Ranger.Identity
             }
             catch (EventStreamDataConstraintException ex)
             {
-                logger.LogError(ex, "Falied to create user.");
+                logger.LogError(ex, "Falied to create user");
                 throw new RangerException(ex.Message);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to create user.");
+                logger.LogError(ex, "Failed to create user");
                 throw;
             }
 

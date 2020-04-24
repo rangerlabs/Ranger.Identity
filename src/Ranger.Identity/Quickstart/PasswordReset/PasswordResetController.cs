@@ -58,7 +58,7 @@ namespace IdentityServer4.Quickstart.UI
                         var token = HttpUtility.UrlEncode(await localUserManager.GeneratePasswordResetTokenAsync(user));
                         _busPublisher.Send(new SendResetPasswordEmail(user.FirstName, model.Email, domain, user.Id, apiResponse.Result.OrganizationName, token), HttpContext.GetCorrelationContextFromHttpContext<SendResetPasswordEmail>(domain, model.Email));
                     }
-                    ModelState.AddModelError("", "An error occurred resetting the password.");
+                    ModelState.AddModelError("", "An error occurred resetting the password");
                 }
             }
             return View("PasswordResetResult");

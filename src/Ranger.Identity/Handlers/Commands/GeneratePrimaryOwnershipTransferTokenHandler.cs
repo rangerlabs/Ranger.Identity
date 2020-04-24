@@ -47,8 +47,8 @@ namespace Ranger.Identity.Handlers.Commands
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to generate the token to facilitate transfering the Primary Owner role.");
-                throw new RangerException("Failed to generate the transfer token.");
+                logger.LogError(ex, "Failed to generate the token to facilitate transfering the Primary Owner role");
+                throw new RangerException("Failed to generate the transfer token");
             }
             busPublisher.Publish(new PrimaryOwnershipTransferTokenGenerated(token), context);
         }

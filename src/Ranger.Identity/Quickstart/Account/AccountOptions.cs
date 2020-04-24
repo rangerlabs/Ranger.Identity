@@ -20,7 +20,7 @@ namespace IdentityServer4.Quickstart.UI
         // if user uses windows auth, should we load the groups from windows
         public static bool IncludeWindowsGroups = false;
 
-        public static string InvalidCredentialsErrorMessage = "Invalid username or password.";
-        public static string LockoutErrorMessage = "The account has been locked due to too many invalid attempts. Please try again after 5 minutes.";
+        public static string InvalidCredentialsErrorMessage = "Invalid username or password";
+        public static string LockoutErrorMessage = "The account has been locked due to too many invalid attempts. Please try again after 5 minutes";
     }
 }

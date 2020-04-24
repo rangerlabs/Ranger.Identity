@@ -251,7 +251,7 @@ namespace Ranger.Identity
         {
             if (!context.Clients.Any())
             {
-                logger.LogInformation("Adding new Client configurations.");
+                logger.LogInformation("Adding new Client configurations");
                 foreach (var client in Config.GetClients())
                 {
                     context.Clients.Add(client.ToEntity());
@@ -261,7 +261,7 @@ namespace Ranger.Identity
 
             if (!context.IdentityResources.Any())
             {
-                logger.LogInformation("Adding new IdentityResource configurations.");
+                logger.LogInformation("Adding new IdentityResource configurations");
                 foreach (var resource in Config.GetIdentityResources())
                 {
                     context.IdentityResources.Add(resource.ToEntity());
@@ -271,7 +271,7 @@ namespace Ranger.Identity
 
             if (!context.ApiResources.Any())
             {
-                logger.LogInformation("Adding new ApiResource configurations.");
+                logger.LogInformation("Adding new ApiResource configurations");
                 foreach (var resource in Config.GetApiResources())
                 {
                     context.ApiResources.Add(resource.ToEntity());
@@ -284,7 +284,7 @@ namespace Ranger.Identity
         {
             if (context.Clients.Any())
             {
-                logger.LogInformation("Removeing existing Client configurations.");
+                logger.LogInformation("Removeing existing Client configurations");
                 foreach (var client in context.Clients)
                 {
                     context.Remove(client);
@@ -293,7 +293,7 @@ namespace Ranger.Identity
             }
             if (context.IdentityResources.Any())
             {
-                logger.LogInformation("Removeing existing IdentityResource configurations.");
+                logger.LogInformation("Removeing existing IdentityResource configurations");
                 foreach (var identityResource in context.IdentityResources)
                 {
                     context.Remove(identityResource);
@@ -302,7 +302,7 @@ namespace Ranger.Identity
             }
             if (context.ApiResources.Any())
             {
-                logger.LogInformation("Removeing existing ApiResource configurations.");
+                logger.LogInformation("Removeing existing ApiResource configurations");
                 foreach (var apiResource in context.ApiResources)
                 {
                     context.Remove(apiResource);
