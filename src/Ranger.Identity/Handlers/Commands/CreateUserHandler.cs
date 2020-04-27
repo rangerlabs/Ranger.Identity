@@ -65,7 +65,7 @@ namespace Ranger.Identity
             {
                 if (createResult.Errors.First().Code == "DuplicateUserName")
                 {
-                    throw new RangerException("The email address is already taken");
+                    throw new RangerException("The email address is already in use");
                 }
                 throw new RangerException("Failed to create user");
             }
