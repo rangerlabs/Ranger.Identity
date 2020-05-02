@@ -8,6 +8,8 @@ using Ranger.Common;
 using Ranger.Identity.Data;
 using Ranger.InternalHttpClient;
 using Ranger.RabbitMQ;
+using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
 namespace Ranger.Identity
 {
@@ -16,17 +18,23 @@ namespace Ranger.Identity
         private readonly IBusPublisher busPublisher;
         private readonly ILogger<CreateUserHandler> logger;
         private readonly Func<TenantOrganizationNameModel, RangerUserManager> userManager;
+        private readonly SubscriptionsHttpClient subscriptionsHttpClient;
+        private readonly ProjectsHttpClient projectsHttpClient;
         private readonly TenantsHttpClient tenantsHttpClient;
 
         public CreateUserHandler(
             IBusPublisher busPublisher,
             ILogger<CreateUserHandler> logger,
             Func<TenantOrganizationNameModel, RangerUserManager> userManager,
+            SubscriptionsHttpClient subscriptionsHttpClient,
+            ProjectsHttpClient projectsHttpClient,
             TenantsHttpClient tenantsHttpClient)
         {
             this.busPublisher = busPublisher;
             this.logger = logger;
             this.userManager = userManager;
+            this.subscriptionsHttpClient = subscriptionsHttpClient;
+            this.projectsHttpClient = projectsHttpClient;
             this.tenantsHttpClient = tenantsHttpClient;
         }
 
@@ -36,6 +44,14 @@ namespace Ranger.Identity
 
             var apiResponse = await tenantsHttpClient.GetTenantByIdAsync<TenantOrganizationNameModel>(command.TenantId);
             var localUserManager = userManager(apiResponse.Result);
+
+            var limitsApiResponse = await subscriptionsHttpClient.GetLimitDetails<SubscriptionLimitDetails>(command.TenantId);
+            var projectsApiResult = await projectsHttpClient.GetAllProjects<IEnumerable<ProjectModel>>(command.TenantId);
+            var usersCount = await localUserManager.Users.CountAsync();
+            if (usersCount >= limitsApiResponse.Result.Limit.Accounts)
+            {
+                throw new RangerException("Subscription limit met");
+            }
 
             var user = new RangerUser
             {
