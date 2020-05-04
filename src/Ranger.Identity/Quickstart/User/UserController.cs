@@ -72,7 +72,7 @@ namespace Ranger.Identity
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "An error occurred getting a user role");
+                this.logger.LogError(ex, "Failed to retrieve a user role");
                 throw new ApiException("Failed to get user role", statusCode: StatusCodes.Status500InternalServerError);
             }
         }
@@ -98,7 +98,7 @@ namespace Ranger.Identity
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "An error occurred retrieving the user");
+                this.logger.LogError(ex, "Failed to retrieve user");
                 throw new ApiException("Failed to update account", statusCode: StatusCodes.Status500InternalServerError);
             }
             if (user is null)
@@ -141,7 +141,7 @@ namespace Ranger.Identity
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "An error occurred getting a user");
+                this.logger.LogError(ex, "Failed to retrieve user");
                 throw new ApiException("Failed to get user", statusCode: StatusCodes.Status500InternalServerError);
             }
         }
@@ -170,7 +170,7 @@ namespace Ranger.Identity
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "An error occurred getting a user role");
+                this.logger.LogError(ex, "Failed to retrieve user role");
                 throw new ApiException("Failed to get user role", statusCode: StatusCodes.Status500InternalServerError);
             }
         }
@@ -197,7 +197,7 @@ namespace Ranger.Identity
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "An error occurred retrieving the users");
+                this.logger.LogError(ex, "Failed to retrieve users");
                 throw new ApiException("Failed to set password", statusCode: StatusCodes.Status500InternalServerError);
             }
 
@@ -256,7 +256,7 @@ namespace Ranger.Identity
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "An error occurred retrieving the users");
+                this.logger.LogError(ex, "Failed to retrieve users");
                 throw new ApiException("Failed to set password", statusCode: StatusCodes.Status500InternalServerError);
             }
 
@@ -331,7 +331,7 @@ namespace Ranger.Identity
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "An error occurred retrieving the users");
+                this.logger.LogError(ex, "Failed to retrieve users");
                 throw new ApiException("Failed to request email change", statusCode: StatusCodes.Status500InternalServerError);
             }
             if (user is null)
@@ -397,7 +397,7 @@ namespace Ranger.Identity
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "An error occurred confirming the email address");
+                this.logger.LogError(ex, "Failed to confirm the email address");
                 throw new ApiException("Failed to confirm email address", statusCode: StatusCodes.Status500InternalServerError);
             }
 
@@ -437,7 +437,7 @@ namespace Ranger.Identity
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "An error occurred getting a user role");
+                this.logger.LogError(ex, "Failed to retrieve user role");
                 throw new ApiException("Failed to get user role", statusCode: StatusCodes.Status500InternalServerError);
             }
         }
@@ -454,7 +454,6 @@ namespace Ranger.Identity
         [HttpDelete("/users/{tenantId}/{email}/account")]
         public async Task<ApiResponse> DeleteAccount(string tenantId, [FromRoute] string email, AccountDeleteModel accountDeleteModel)
         {
-            var apiResponse = await subscriptionsClient.DecrementResource(tenantId, ResourceEnum.Account);
             var tenantApiResponse = await tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(tenantId);
             var localUserManager = userManager(tenantApiResponse.Result);
             RangerUser user = null;
@@ -471,7 +470,7 @@ namespace Ranger.Identity
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "An error occurred retrieving the user or users roles");
+                this.logger.LogError(ex, "Failed to retrieve user or users roles");
                 throw new ApiException("Failed to delete account", statusCode: StatusCodes.Status500InternalServerError);
             }
 
@@ -496,7 +495,6 @@ namespace Ranger.Identity
         [HttpDelete("/users/{tenantId}/{email}")]
         public async Task<ApiResponse> DeleteUserByEmail(string tenantId, string email, DeleteUserModel deleteUserModel)
         {
-            var apiResponse = await subscriptionsClient.DecrementResource(tenantId, ResourceEnum.Account);
             var tenantApiResponse = await tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(tenantId);
             var localUserManager = userManager(tenantApiResponse.Result);
             RangerUser user = null;
@@ -512,7 +510,7 @@ namespace Ranger.Identity
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "An error occurred retrieving the user or users roles");
+                this.logger.LogError(ex, "Failed to retrieve user or users roles");
                 throw new ApiException("Failed to delete user", statusCode: StatusCodes.Status500InternalServerError);
             }
             if (user is null)
