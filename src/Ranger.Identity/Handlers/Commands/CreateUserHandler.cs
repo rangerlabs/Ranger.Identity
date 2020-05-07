@@ -45,12 +45,16 @@ namespace Ranger.Identity
             var apiResponse = await tenantsHttpClient.GetTenantByIdAsync<TenantOrganizationNameModel>(command.TenantId);
             var localUserManager = userManager(apiResponse.Result);
 
-            var limitsApiResponse = await subscriptionsHttpClient.GetLimitDetails<SubscriptionLimitDetails>(command.TenantId);
+            var limitsApiResponse = await subscriptionsHttpClient.GetSubscription<SubscriptionLimitDetails>(command.TenantId);
             var projectsApiResult = await projectsHttpClient.GetAllProjects<IEnumerable<ProjectModel>>(command.TenantId);
             var usersCount = await localUserManager.Users.CountAsync();
             if (usersCount >= limitsApiResponse.Result.Limit.Accounts)
             {
                 throw new RangerException("Subscription limit met");
+            }
+            if (!limitsApiResponse.Result.Active)
+            {
+                throw new RangerException("Subscription is inactive");
             }
 
             var user = new RangerUser
