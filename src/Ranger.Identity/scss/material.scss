@@ -7,11 +7,16 @@ $mdc-typography-font-family: unquote("'Lato', sans-serif");
 
 .mdc-top-app-bar {
     --mdc-theme-primary: #fff;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
 }
 
 .mdc-button {
     font-weight: 700;
+    border-radius: 0px;
+}
+
+.mdc-elevation--z3 {
+    padding: 32px;
 }
 
 .mdc-text-field {
@@ -23,7 +28,6 @@ $mdc-typography-font-family: unquote("'Lato', sans-serif");
 .mdc-typography--headline5 {
     font-size: 1.6917rem;
     font-weight: 400;
-    color: #1b4d10;
 }
 
 .mdc-top-app-bar__section a h5 {
@@ -60,6 +64,10 @@ a {
 
 button {
     border-radius: 0px;
+}
+
+.validation-summary ul {
+    padding: 0px;
 }
 
 .validation-summary ul li {

@@ -9,7 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Logging;
-using Ranger.Logging;
+using Ranger.Monitoring.Logging;
 
 namespace Ranger.Identity
 {
