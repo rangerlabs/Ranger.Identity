@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using AutoWrapper.Wrappers;
 using IdentityServer4.Extensions;
 using IdentityServer4.Models;
 using IdentityServer4.Services;
@@ -19,17 +20,15 @@ namespace Ranger.Identity
 {
     public class ApplicationUserProfileService : IProfileService
     {
-        private readonly Func<string, RangerUserManager> userManager;
-        private readonly RoleManager<IdentityRole> roleManager;
+        private readonly Func<TenantOrganizationNameModel, RangerUserManager> userManager;
         private readonly IHttpContextAccessor contextAccessor;
-        private readonly ITenantsClient tenantsClient;
-        private readonly IProjectsClient projectsClient;
+        private readonly TenantsHttpClient tenantsClient;
+        private readonly ProjectsHttpClient projectsClient;
         private readonly ILogger logger;
 
-        public ApplicationUserProfileService(Func<string, RangerUserManager> userManager, RoleManager<IdentityRole> roleManager, IHttpContextAccessor contextAccessor, ITenantsClient tenantsClient, IProjectsClient projectsClient, ILogger<ApplicationUserProfileService> logger)
+        public ApplicationUserProfileService(Func<TenantOrganizationNameModel, RangerUserManager> userManager, IHttpContextAccessor contextAccessor, TenantsHttpClient tenantsClient, ProjectsHttpClient projectsClient, ILogger<ApplicationUserProfileService> logger)
         {
             this.userManager = userManager;
-            this.roleManager = roleManager;
             this.contextAccessor = contextAccessor;
             this.tenantsClient = tenantsClient;
             this.projectsClient = projectsClient;
@@ -47,15 +46,16 @@ namespace Ranger.Identity
                 context.Caller);
 
             var domain = contextAccessor.HttpContext.Request.Host.GetDomainFromHost();
-            var localUserManager = userManager(domain);
+
+            var tenantApiResponse = await tenantsClient.GetTenantByDomainAsync<TenantOrganizationNameModel>(domain);
+            var localUserManager = userManager(tenantApiResponse.Result);
             var user = await localUserManager.FindByIdAsync(context.Subject.GetSubjectId());
             var claims = new List<Claim> {
                 new Claim ("email", user.Email),
                 new Claim ("firstName", user.FirstName),
                 new Claim ("lastName", user.LastName),
                 new Claim ("domain", domain),
-                new Claim("authorizedProjects", JsonConvert.SerializeObject(await projectsClient.GetProjectIdsForUser(domain, user.Email)))
-            };
+        };
 
             var role = await localUserManager.GetRolesAsync(user);
             var userRole = ((RolesEnum)Enum.Parse(typeof(RolesEnum), role.First())).GetCascadedRoles();
@@ -70,7 +70,8 @@ namespace Ranger.Identity
         {
             var sub = context.Subject.GetSubjectId();
             var domain = contextAccessor.HttpContext.Request.Host.GetDomainFromHost();
-            var localUserManager = userManager(domain);
+            var tenantApiResponse = await tenantsClient.GetTenantByDomainAsync<TenantOrganizationNameModel>(domain);
+            var localUserManager = userManager(tenantApiResponse.Result);
             var user = await localUserManager.FindByIdAsync(sub);
             context.IsActive = user != null;
         }

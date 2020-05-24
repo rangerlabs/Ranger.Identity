@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Ranger.Identity.Data;
 
-namespace Ranger.Identity.Migrations
+namespace Ranger.Identity
 {
     [DbContext(typeof(RangerIdentityDbContext))]
     partial class RangerIdentityDbContextModelSnapshot : ModelSnapshot
@@ -16,7 +16,7 @@ namespace Ranger.Identity.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn)
-                .HasAnnotation("ProductVersion", "3.1.0")
+                .HasAnnotation("ProductVersion", "3.1.1")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
@@ -218,11 +218,6 @@ namespace Ranger.Identity.Migrations
                         .HasColumnName("concurrency_stamp")
                         .HasColumnType("text");
 
-                    b.Property<string>("DatabaseUsername")
-                        .IsRequired()
-                        .HasColumnName("database_username")
-                        .HasColumnType("text");
-
                     b.Property<string>("Email")
                         .HasColumnName("email")
                         .HasColumnType("character varying(256)")
@@ -276,6 +271,12 @@ namespace Ranger.Identity.Migrations
                         .HasColumnName("security_stamp")
                         .HasColumnType("text");
 
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnName("tenant_id")
+                        .HasColumnType("character varying(36)")
+                        .HasMaxLength(36);
+
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnName("two_factor_enabled")
                         .HasColumnType("boolean");
@@ -293,11 +294,11 @@ namespace Ranger.Identity.Migrations
                     b.HasKey("Id")
                         .HasName("pk_users");
 
-                    b.HasIndex("DatabaseUsername", "NormalizedEmail")
+                    b.HasIndex("TenantId", "NormalizedEmail")
                         .IsUnique()
                         .HasName("EmailIndex");
 
-                    b.HasIndex("DatabaseUsername", "NormalizedUserName")
+                    b.HasIndex("TenantId", "NormalizedUserName")
                         .IsUnique()
                         .HasName("UserNameIndex");
 

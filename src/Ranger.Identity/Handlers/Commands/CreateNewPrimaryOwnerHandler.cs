@@ -16,27 +16,28 @@ namespace Ranger.Identity
     public class CreateNewPrimaryOwnerHandler : ICommandHandler<CreateNewPrimaryOwner>
     {
         private readonly IBusPublisher busPublisher;
-        private readonly Func<string, RangerUserManager> userManager;
-        private readonly ITenantsClient tenantsClient;
+        private readonly Func<TenantOrganizationNameModel, RangerUserManager> userManager;
+        private readonly TenantsHttpClient _tenantsClient;
         private readonly ILogger<CreateNewPrimaryOwnerHandler> logger;
 
         public CreateNewPrimaryOwnerHandler(
             IBusPublisher busPublisher,
-            Func<string, RangerUserManager> userManager,
-            ITenantsClient tenantsClient,
-            ILogger<CreateNewPrimaryOwnerHandler> logger)
+            Func<TenantOrganizationNameModel, RangerUserManager> userManager,
+            ILogger<CreateNewPrimaryOwnerHandler> logger,
+            TenantsHttpClient tenantsClient
+            )
         {
             this.busPublisher = busPublisher;
             this.userManager = userManager;
-            this.tenantsClient = tenantsClient;
             this.logger = logger;
+            this._tenantsClient = tenantsClient;
         }
 
         public async Task HandleAsync(CreateNewPrimaryOwner command, ICorrelationContext context)
         {
-            logger.LogInformation($"Creating new tenant owner '{command.Email}' for tenant with domain '{command.Domain}'.");
-
-            var localUserManager = userManager(command.Domain);
+            logger.LogInformation($"Creating new tenant owner '{command.Email}' for tenant with domain '{command.TenantId}'");
+            var apiResponse = await _tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(command.TenantId);
+            var localUserManager = userManager(apiResponse.Result);
 
             var user = new RangerUser
             {
@@ -46,7 +47,7 @@ namespace Ranger.Identity
                 EmailConfirmed = true,
                 FirstName = command.FirstName,
                 LastName = command.LastName,
-                DatabaseUsername = localUserManager.TenantOrganizationNameModel.DatabaseUsername
+                TenantId = localUserManager.contextTenant.TenantId
             };
             try
             {
@@ -55,16 +56,16 @@ namespace Ranger.Identity
             }
             catch (EventStreamDataConstraintException ex)
             {
-                logger.LogError(ex, "Falied to create user.");
+                logger.LogError(ex, "Falied to create user");
                 throw new RangerException(ex.Message);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to create user.");
+                logger.LogError(ex, "Failed to create user");
                 throw;
             }
 
-            this.busPublisher.Publish(new NewPrimaryOwnerCreated(user.Email, user.FirstName, user.LastName, command.Domain, "PrimaryOwner"), context);
+            this.busPublisher.Publish(new NewPrimaryOwnerCreated(user.Email, user.FirstName, user.LastName, command.TenantId, "PrimaryOwner"), context);
         }
     }
 }

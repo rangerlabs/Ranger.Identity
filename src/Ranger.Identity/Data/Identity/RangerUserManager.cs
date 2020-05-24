@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -11,9 +10,9 @@ namespace Ranger.Identity.Data
 {
     public class RangerUserManager : UserManager<RangerUser>, IDisposable
     {
-        public TenantOrganizationNameModel TenantOrganizationNameModel { get; }
+        public TenantOrganizationNameModel contextTenant { get; }
         public RangerUserManager(
-            TenantOrganizationNameModel tenantOrganizationNameModel,
+            TenantOrganizationNameModel contextTenant,
             UserStore<RangerUser> userStore,
             IOptions<IdentityOptions> optionsAccessor,
             IPasswordHasher<RangerUser> passwordHasher,
@@ -26,7 +25,7 @@ namespace Ranger.Identity.Data
         )
             : base(userStore, optionsAccessor, passwordHasher, userValidators, passwordValidators, keyNormalizer, errors, services, logger)
         {
-            this.TenantOrganizationNameModel = tenantOrganizationNameModel;
+            this.contextTenant = contextTenant;
         }
     }
 }

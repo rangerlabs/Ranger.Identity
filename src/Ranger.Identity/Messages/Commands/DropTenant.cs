@@ -5,11 +5,11 @@ namespace Ranger.Identity
     [MessageNamespace("identity")]
     public class DropTenant : ICommand
     {
-        public string DatabaseUsername { get; }
+        public string TenantId { get; }
 
-        public DropTenant(string databaseUsername)
+        public DropTenant(string tenantId)
         {
-            this.DatabaseUsername = databaseUsername;
+            this.TenantId = tenantId;
         }
     }
 }

@@ -26,6 +26,9 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Ranger.ApiUtilities;
+using Microsoft.AspNetCore.Mvc.Versioning;
+using Ranger.Monitoring.HealthChecks;
 
 namespace Ranger.Identity
 {
@@ -51,20 +54,23 @@ namespace Ranger.Identity
                 options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
             });
 
-            services.AddSingleton<ITenantsClient, TenantsClient>(provider =>
+            services.AddAutoWrapper();
+            if (Environment.IsDevelopment())
             {
-                return new TenantsClient("http://tenants:8082", provider.GetService<ILogger<TenantsClient>>());
-            });
-            services.AddSingleton<IProjectsClient, ProjectsClient>(provider =>
-            {
-                return new ProjectsClient("http://projects:8086", provider.GetService<ILogger<ProjectsClient>>());
-            });
+                services.AddSwaggerGen("Identity API", "v1");
+            }
+            services.AddApiVersioning(o => o.ApiVersionReader = new HeaderApiVersionReader("api-version"));
+
+            services.AddPollyPolicyRegistry();
+            services.AddTenantsHttpClient("http://tenants:8082", "tenantsApi", "cKprgh9wYKWcsm");
+            services.AddProjectsHttpClient("http://projects:8086", "projectsApi", "usGwT8Qsp4La2");
+            services.AddSubscriptionsHttpClient("http://subscriptions:8089", "subscriptionsApi", "4T3SXqXaD6GyGHn4RY");
 
             services.AddDbContext<RangerIdentityDbContext>(options =>
             {
                 options.UseNpgsql(configuration["cloudSql:ConnectionString"]);
             });
-            services.AddEntityFrameworkNpgsql().AddDbContext<ConfigurationDbContext>((serviceProvider, options) =>
+            services.AddDbContext<ConfigurationDbContext>((serviceProvider, options) =>
             {
                 options.UseNpgsql(configuration["cloudSql:ConnectionString"], npgsqlOptions =>
                 {
@@ -72,7 +78,7 @@ namespace Ranger.Identity
                     npgsqlOptions.MigrationsAssembly(migrationsAssembly);
                 });
             });
-            services.AddEntityFrameworkNpgsql().AddDbContext<PersistedGrantDbContext>((serviceProvider, options) =>
+            services.AddDbContext<PersistedGrantDbContext>((serviceProvider, options) =>
             {
                 options.UseNpgsql(configuration["cloudSql:ConnectionString"], npgsqlOptions =>
                 {
@@ -100,39 +106,39 @@ namespace Ranger.Identity
                 .AddDefaultTokenProviders();
 
             var identityServerBuilder = services.AddIdentityServer(options =>
-            {
-                options.Events.RaiseErrorEvents = true;
-                options.Events.RaiseInformationEvents = true;
-                options.Events.RaiseFailureEvents = true;
-                options.Events.RaiseSuccessEvents = true;
-                if (Environment.IsDevelopment())
                 {
-                    options.IssuerUri = $"http://localhost.io:5000";
-                }
-                else
-                {
-                    options.IssuerUri = $"https://rangerlabs.io";
-                }
-            })
-                .AddAspNetIdentity<RangerUser>()
-                .AddRedirectUriValidator<MultitenantRedirectUriValidator>()
-                .AddProfileService<ApplicationUserProfileService>()
-                .AddConfigurationStore(options =>
-                {
-                    options.ConfigureDbContext = builder =>
+                    options.Events.RaiseErrorEvents = true;
+                    options.Events.RaiseInformationEvents = true;
+                    options.Events.RaiseFailureEvents = true;
+                    options.Events.RaiseSuccessEvents = true;
+                    if (Environment.IsDevelopment())
                     {
-                        builder.UseNpgsql(configuration["cloudSql:ConnectionString"]);
-                    };
+                        options.IssuerUri = $"http://localhost.io:5000";
+                    }
+                    else
+                    {
+                        options.IssuerUri = $"https://rangerlabs.io";
+                    }
                 })
-                .AddOperationalStore(options =>
-                {
-                    options.ConfigureDbContext = builder =>
+                    .AddAspNetIdentity<RangerUser>()
+                    .AddRedirectUriValidator<MultitenantRedirectUriValidator>()
+                    .AddProfileService<ApplicationUserProfileService>()
+                    .AddConfigurationStore(options =>
                     {
-                        builder.UseNpgsql(configuration["cloudSql:ConnectionString"]);
-                    };
-                    options.EnableTokenCleanup = true;
-                    options.TokenCleanupInterval = 60;
-                });
+                        options.ConfigureDbContext = builder =>
+                        {
+                            builder.UseNpgsql(configuration["cloudSql:ConnectionString"]);
+                        };
+                    })
+                    .AddOperationalStore(options =>
+                    {
+                        options.ConfigureDbContext = builder =>
+                        {
+                            builder.UseNpgsql(configuration["cloudSql:ConnectionString"]);
+                        };
+                        options.EnableTokenCleanup = true;
+                        options.TokenCleanupInterval = 60;
+                    });
 
             identityServerBuilder.AddSigningCredential(new X509Certificate2(configuration["IdentitySigningCertPath:Path"]));
             identityServerBuilder.AddValidationKey(new X509Certificate2(configuration["IdentityValidationCertPath:Path"]));
@@ -143,18 +149,24 @@ namespace Ranger.Identity
             services.AddDataProtection()
                 .ProtectKeysWithCertificate(new X509Certificate2(configuration["DataProtectionCertPath:Path"]))
                 .PersistKeysToDbContext<RangerIdentityDbContext>();
+
+            services.AddLiveHealthCheck();
+            services.AddEntityFrameworkHealthCheck<IdentityDbContext>();
+            services.AddDockerImageTagHealthCheck();
+            services.AddRabbitMQHealthCheck();
         }
 
         public void ConfigureContainer(ContainerBuilder builder)
         {
             builder.RegisterType<RangerIdentityDbContext>().AsSelf().InstancePerRequest();
+            builder.RegisterType<RangerIdentityDbContext>().AsSelf().InstancePerDependency();
             builder.RegisterType<TenantServiceRangerIdentityDbContext>();
             builder.RegisterInstance<CloudSqlOptions>(configuration.GetOptions<CloudSqlOptions>("cloudSql"));
-            builder.RegisterType<RangerIdentityDbContext>().InstancePerDependency();
             builder.Register((c, p) =>
             {
                 var provider = c.Resolve<TenantServiceRangerIdentityDbContext>();
-                var (dbContextOptions, model) = provider.GetDbContextOptions(p.TypedAs<string>());
+                var value = p.TypedAs<TenantOrganizationNameModel>();
+                var (dbContextOptions, model) = provider.GetDbContextOptions(value);
                 var userStore = new UserStore<RangerUser>(new RangerIdentityDbContext(dbContextOptions));
 
                 return new RangerUserManager(model,
@@ -167,7 +179,7 @@ namespace Ranger.Identity
                     c.Resolve<IdentityErrorDescriber>(),
                     c.Resolve<IServiceProvider>(),
                     c.Resolve<ILogger<UserManager<RangerUser>>>());
-            });
+            }).InstancePerDependency();
             builder.Register((c, p) =>
             {
                 return new RangerSignInManager(c.Resolve<RangerUserManager>(p),
@@ -177,7 +189,7 @@ namespace Ranger.Identity
                     c.Resolve<ILogger<SignInManager<RangerUser>>>(),
                     c.Resolve<IAuthenticationSchemeProvider>(),
                     c.Resolve<IUserConfirmation<RangerUser>>());
-            });
+            }).InstancePerDependency();
             builder.AddRabbitMq();
         }
 
@@ -195,7 +207,10 @@ namespace Ranger.Identity
             app.UseForwardedHeaders(forwardOptions);
 
             applicationLifetime.ApplicationStopping.Register(OnShutdown);
+
+            //TODO: Only initialize once and not in production
             InitializeDatabase(app, loggerFactory.CreateLogger<Startup>());
+
             app.UseIdentityServer();
             this.busSubscriber = app.UseRabbitMQ()
                 .SubscribeCommand<CreateNewPrimaryOwner>((c, e) =>
@@ -213,6 +228,11 @@ namespace Ranger.Identity
                 ;
 
             app.UsePathBase("/auth");
+            if (Environment.IsDevelopment())
+            {
+                app.UseSwagger("v1", "Identity API");
+            }
+            app.UseAutoWrapper(false, "/users");
             app.UseStaticFiles();
             app.UseRouting();
             app.UseIdentityServer();
@@ -220,6 +240,11 @@ namespace Ranger.Identity
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapDefaultControllerRoute();
+                endpoints.MapHealthChecks();
+                endpoints.MapLiveTagHealthCheck();
+                endpoints.MapEfCoreTagHealthCheck();
+                endpoints.MapDockerImageTagHealthCheck();
+                endpoints.MapRabbitMQHealthCheck();
             });
         }
 
@@ -237,7 +262,7 @@ namespace Ranger.Identity
         {
             if (!context.Clients.Any())
             {
-                logger.LogInformation("Adding new Client configurations.");
+                logger.LogInformation("Adding new Client configurations");
                 foreach (var client in Config.GetClients())
                 {
                     context.Clients.Add(client.ToEntity());
@@ -247,7 +272,7 @@ namespace Ranger.Identity
 
             if (!context.IdentityResources.Any())
             {
-                logger.LogInformation("Adding new IdentityResource configurations.");
+                logger.LogInformation("Adding new IdentityResource configurations");
                 foreach (var resource in Config.GetIdentityResources())
                 {
                     context.IdentityResources.Add(resource.ToEntity());
@@ -257,7 +282,7 @@ namespace Ranger.Identity
 
             if (!context.ApiResources.Any())
             {
-                logger.LogInformation("Adding new ApiResource configurations.");
+                logger.LogInformation("Adding new ApiResource configurations");
                 foreach (var resource in Config.GetApiResources())
                 {
                     context.ApiResources.Add(resource.ToEntity());
@@ -270,7 +295,7 @@ namespace Ranger.Identity
         {
             if (context.Clients.Any())
             {
-                logger.LogInformation("Removeing existing Client configurations.");
+                logger.LogInformation("Removeing existing Client configurations");
                 foreach (var client in context.Clients)
                 {
                     context.Remove(client);
@@ -279,7 +304,7 @@ namespace Ranger.Identity
             }
             if (context.IdentityResources.Any())
             {
-                logger.LogInformation("Removeing existing IdentityResource configurations.");
+                logger.LogInformation("Removeing existing IdentityResource configurations");
                 foreach (var identityResource in context.IdentityResources)
                 {
                     context.Remove(identityResource);
@@ -288,7 +313,7 @@ namespace Ranger.Identity
             }
             if (context.ApiResources.Any())
             {
-                logger.LogInformation("Removeing existing ApiResource configurations.");
+                logger.LogInformation("Removeing existing ApiResource configurations");
                 foreach (var apiResource in context.ApiResources)
                 {
                     context.Remove(apiResource);

@@ -8,6 +8,8 @@ using Ranger.Common;
 using Ranger.Identity.Data;
 using Ranger.InternalHttpClient;
 using Ranger.RabbitMQ;
+using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
 namespace Ranger.Identity
 {
@@ -15,26 +17,46 @@ namespace Ranger.Identity
     {
         private readonly IBusPublisher busPublisher;
         private readonly ILogger<CreateUserHandler> logger;
-        private readonly Func<string, RangerUserManager> userManager;
-        private readonly ITenantsClient tenantsClient;
+        private readonly Func<TenantOrganizationNameModel, RangerUserManager> userManager;
+        private readonly SubscriptionsHttpClient subscriptionsHttpClient;
+        private readonly ProjectsHttpClient projectsHttpClient;
+        private readonly TenantsHttpClient tenantsHttpClient;
 
         public CreateUserHandler(
             IBusPublisher busPublisher,
-            ITenantsClient tenantsClient,
             ILogger<CreateUserHandler> logger,
-            Func<string, RangerUserManager> userManager)
+            Func<TenantOrganizationNameModel, RangerUserManager> userManager,
+            SubscriptionsHttpClient subscriptionsHttpClient,
+            ProjectsHttpClient projectsHttpClient,
+            TenantsHttpClient tenantsHttpClient)
         {
             this.busPublisher = busPublisher;
             this.logger = logger;
             this.userManager = userManager;
-            this.tenantsClient = tenantsClient;
+            this.subscriptionsHttpClient = subscriptionsHttpClient;
+            this.projectsHttpClient = projectsHttpClient;
+            this.tenantsHttpClient = tenantsHttpClient;
         }
 
         public async Task HandleAsync(CreateUser command, ICorrelationContext context)
         {
-            logger.LogInformation($"Creating user '{command.Email}' for tenant with domain '{command.Domain}'.");
+            logger.LogInformation($"Creating user '{command.Email}' for tenant with domain '{command.TenantId}'");
 
-            var localUserManager = userManager(command.Domain);
+            var apiResponse = await tenantsHttpClient.GetTenantByIdAsync<TenantOrganizationNameModel>(command.TenantId);
+            var localUserManager = userManager(apiResponse.Result);
+
+            var limitsApiResponse = await subscriptionsHttpClient.GetSubscription<SubscriptionLimitDetails>(command.TenantId);
+            var projectsApiResult = await projectsHttpClient.GetAllProjects<IEnumerable<ProjectModel>>(command.TenantId);
+            var usersCount = await localUserManager.Users.CountAsync();
+            if (!limitsApiResponse.Result.Active)
+            {
+                throw new RangerException("Subscription is inactive");
+            }
+            if (usersCount >= limitsApiResponse.Result.Limit.Accounts)
+            {
+                throw new RangerException("Subscription limit met");
+            }
+
 
             var user = new RangerUser
             {
@@ -44,7 +66,7 @@ namespace Ranger.Identity
                 EmailConfirmed = false,
                 FirstName = command.FirstName,
                 LastName = command.LastName,
-                DatabaseUsername = localUserManager.TenantOrganizationNameModel.DatabaseUsername
+                TenantId = localUserManager.contextTenant.TenantId
             };
 
             IdentityResult createResult = null;
@@ -56,7 +78,7 @@ namespace Ranger.Identity
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to create user.");
+                logger.LogError(ex, "Failed to create user");
                 throw;
             }
 
@@ -64,14 +86,14 @@ namespace Ranger.Identity
             {
                 if (createResult.Errors.First().Code == "DuplicateUserName")
                 {
-                    throw new RangerException("The email address is already taken.");
+                    throw new RangerException("The email address is already in use");
                 }
-                throw new RangerException("Failed to create user.");
+                throw new RangerException("Failed to create user");
             }
 
             var emailToken = HttpUtility.UrlEncode(await localUserManager.GenerateEmailConfirmationTokenAsync(user));
 
-            busPublisher.Publish(new UserCreated(command.Domain, user.Id, command.Email, user.FirstName, command.Role, emailToken, command.AuthorizedProjectIds), context);
+            busPublisher.Publish(new UserCreated(command.TenantId, user.Id, command.Email, user.FirstName, command.Role, emailToken, command.AuthorizedProjectIds), context);
         }
     }
 }

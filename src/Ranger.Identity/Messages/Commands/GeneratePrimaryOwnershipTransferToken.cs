@@ -6,23 +6,23 @@ namespace Ranger.Identity
     public class GeneratePrimaryOwnershipTransferToken : ICommand
     {
         public GeneratePrimaryOwnershipTransferToken(string transferUserEmail,
-            string domain)
+            string tenantId)
         {
             if (string.IsNullOrWhiteSpace(transferUserEmail))
             {
-                throw new System.ArgumentException($"{nameof(transferUserEmail)} was null or whitespace.");
+                throw new System.ArgumentException($"{nameof(transferUserEmail)} was null or whitespace");
             }
 
-            if (string.IsNullOrWhiteSpace(domain))
+            if (string.IsNullOrWhiteSpace(tenantId))
             {
-                throw new System.ArgumentException($"{nameof(domain)} was null or whitespace.");
+                throw new System.ArgumentException($"{nameof(tenantId)} was null or whitespace");
             }
 
             TransferUserEmail = transferUserEmail;
-            Domain = domain;
+            TenantId = tenantId;
         }
 
         public string TransferUserEmail { get; }
-        public string Domain { get; }
+        public string TenantId { get; }
     }
 }
