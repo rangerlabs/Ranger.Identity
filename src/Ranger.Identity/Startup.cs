@@ -34,8 +34,8 @@ namespace Ranger.Identity
 {
     public class Startup
     {
-        private IWebHostEnvironment Environment;
         private readonly IConfiguration configuration;
+        private IWebHostEnvironment Environment;
         private ILoggerFactory loggerFactory;
         private IBusSubscriber busSubscriber;
 
@@ -61,10 +61,11 @@ namespace Ranger.Identity
             }
             services.AddApiVersioning(o => o.ApiVersionReader = new HeaderApiVersionReader("api-version"));
 
+            var identityAuthority = configuration["httpClient:identityAuthority"];
             services.AddPollyPolicyRegistry();
-            services.AddTenantsHttpClient("http://tenants:8082", "tenantsApi", "cKprgh9wYKWcsm");
-            services.AddProjectsHttpClient("http://projects:8086", "projectsApi", "usGwT8Qsp4La2");
-            services.AddSubscriptionsHttpClient("http://subscriptions:8089", "subscriptionsApi", "4T3SXqXaD6GyGHn4RY");
+            services.AddTenantsHttpClient("http://tenants:8082", identityAuthority, "tenantsApi", "cKprgh9wYKWcsm");
+            services.AddProjectsHttpClient("http://projects:8086", identityAuthority, "projectsApi", "usGwT8Qsp4La2");
+            services.AddSubscriptionsHttpClient("http://subscriptions:8089", identityAuthority, "subscriptionsApi", "4T3SXqXaD6GyGHn4RY");
 
             services.AddDbContext<RangerIdentityDbContext>(options =>
             {
@@ -105,20 +106,14 @@ namespace Ranger.Identity
                 .AddEntityFrameworkStores<RangerIdentityDbContext>()
                 .AddDefaultTokenProviders();
 
+            GlobalConfig.IdentityServerOptions = configuration.GetOptions<IdentityServerOptions>("identityServer");
             var identityServerBuilder = services.AddIdentityServer(options =>
                 {
                     options.Events.RaiseErrorEvents = true;
                     options.Events.RaiseInformationEvents = true;
                     options.Events.RaiseFailureEvents = true;
                     options.Events.RaiseSuccessEvents = true;
-                    if (Environment.IsDevelopment())
-                    {
-                        options.IssuerUri = $"http://localhost.io:5000";
-                    }
-                    else
-                    {
-                        options.IssuerUri = $"https://rangerlabs.io";
-                    }
+                    options.IssuerUri = configuration["identityServer:IssuerUri"];
                 })
                     .AddAspNetIdentity<RangerUser>()
                     .AddRedirectUriValidator<MultitenantRedirectUriValidator>()

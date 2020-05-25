@@ -12,13 +12,13 @@ namespace Ranger.Identity
     {
         public static bool UriMatchesTheHostExcludingSubDomain(string uri)
         {
-            Regex validRegex = new Regex($@"^https://(?:.+\.)?{GlobalConfig.Host}(?::\d{{1,5}})?$");
+            Regex validRegex = new Regex($@"^https://(?:.+\.)?{GlobalConfig.IdentityServerOptions.Host}(?::\d{{1,5}})?$");
             return validRegex.IsMatch(uri);
         }
 
         public static bool RedirectUriMatchesTheHostExcludingSubDomain(string uri)
         {
-            Regex validRegex = new Regex($@"^https://(?:.+\.)?{GlobalConfig.Host}(?::\d{{1,5}})?/callback|silent-refresh\.html$");
+            Regex validRegex = new Regex($@"^https://(?:.+\.)?{GlobalConfig.IdentityServerOptions.Host}(?::\d{{1,5}})?/callback|silent-refresh\.html$");
             return validRegex.IsMatch(uri);
         }
     }

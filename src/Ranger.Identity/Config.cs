@@ -8,6 +8,12 @@ namespace Ranger.Identity
 {
     public class Config
     {
+        private readonly IdentityServerOptions identityServerOptions;
+        public Config(IdentityServerOptions identityServerOptions)
+        {
+            this.identityServerOptions = identityServerOptions;
+        }
+
         public static IEnumerable<IdentityResource> GetIdentityResources()
         {
             return new List<IdentityResource> {
@@ -27,7 +33,7 @@ namespace Ranger.Identity
             {
                 Name = IdentityServerConstants.LocalApi.ScopeName,
                 ApiSecrets = {
-                    new Secret ("89pCcXHuDYTXY".Sha256 ())
+                new Secret ("89pCcXHuDYTXY".Sha256 ())
                 },
                 Scopes = { new Scope(IdentityServerConstants.LocalApi.ScopeName, "Identity API") }
             };
@@ -35,7 +41,7 @@ namespace Ranger.Identity
             {
                 Name = "tenantsApi",
                 ApiSecrets = {
-                    new Secret ("cKprgh9wYKWcsm".Sha256 ())
+                new Secret ("cKprgh9wYKWcsm".Sha256 ())
                 },
                 Scopes = { new Scope("tenantsApi", "Tenants API") }
             };
@@ -43,7 +49,7 @@ namespace Ranger.Identity
             {
                 Name = "projectsApi",
                 ApiSecrets = {
-                    new Secret ("usGwT8Qsp4La2".Sha256())
+                new Secret ("usGwT8Qsp4La2".Sha256 ())
                 },
                 Scopes = { new Scope("projectsApi", "Projects API") }
             };
@@ -51,7 +57,7 @@ namespace Ranger.Identity
             {
                 Name = "integrationsApi",
                 ApiSecrets = {
-                    new Secret ("6HyhzSoSHvxTG".Sha256())
+                new Secret ("6HyhzSoSHvxTG".Sha256 ())
                 },
                 Scopes = { new Scope("integrationsApi", "Integrations API") }
             };
@@ -59,7 +65,7 @@ namespace Ranger.Identity
             {
                 Name = "geofencesApi",
                 ApiSecrets = {
-                    new Secret ("9pwJgpgpu6PNJi".Sha256())
+                new Secret ("9pwJgpgpu6PNJi".Sha256 ())
                 },
                 Scopes = { new Scope("geofencesApi", "Geofences API") }
             };
@@ -67,7 +73,7 @@ namespace Ranger.Identity
             {
                 Name = "breadcrumbsApi",
                 ApiSecrets = {
-                    new Secret ("Esyz6NkukU98TqzpXU".Sha256())
+                new Secret ("Esyz6NkukU98TqzpXU".Sha256 ())
                 },
                 Scopes = { new Scope("breadcrumbsApi", "Breadcrumbs API") }
             };
@@ -75,13 +81,12 @@ namespace Ranger.Identity
             {
                 Name = "subscriptionsApi",
                 ApiSecrets = {
-                    new Secret ("4T3SXqXaD6GyGHn4RY".Sha256())
+                new Secret ("4T3SXqXaD6GyGHn4RY".Sha256 ())
                 },
                 Scopes = { new Scope("subscriptionsApi", "Subscriptions API") }
             };
 
-            return new List<ApiResource>
-            {
+            return new List<ApiResource> {
                 apiGatewayResource,
                 tenantsApiResource,
                 projectsApiResource,
@@ -117,11 +122,11 @@ namespace Ranger.Identity
                 AccessTokenLifetime = 1800, //30 minutes
                 AllowedGrantTypes = GrantTypes.ClientCredentials,
                 ClientSecrets = {
-                    new Secret ("89pCcXHuDYTXY".Sha256 ()),
-                },
+                        new Secret ("89pCcXHuDYTXY".Sha256 ()),
+                    },
                 AllowedScopes = {
-                    IdentityServerConstants.LocalApi.ScopeName,
-                }
+                        IdentityServerConstants.LocalApi.ScopeName,
+                    }
             });
             clients.Add(new Client
             {
@@ -131,11 +136,11 @@ namespace Ranger.Identity
                 AccessTokenLifetime = 1800, //30 minutes
                 AllowedGrantTypes = GrantTypes.ClientCredentials,
                 ClientSecrets = {
-                    new Secret ("usGwT8Qsp4La2".Sha256 ()),
-                },
+                        new Secret ("usGwT8Qsp4La2".Sha256 ()),
+                    },
                 AllowedScopes = {
-                    "projectsApi",
-                }
+                        "projectsApi",
+                    }
             });
             clients.Add(new Client
             {
@@ -144,11 +149,11 @@ namespace Ranger.Identity
                 AccessTokenLifetime = 1800, //30 minutes
                 AllowedGrantTypes = GrantTypes.ClientCredentials,
                 ClientSecrets = {
-                    new Secret ("6HyhzSoSHvxTG".Sha256()),
-                },
+                        new Secret ("6HyhzSoSHvxTG".Sha256 ()),
+                    },
                 AllowedScopes = {
-                    "integrationsApi",
-                }
+                        "integrationsApi",
+                    }
             });
             clients.Add(new Client
             {
@@ -157,11 +162,11 @@ namespace Ranger.Identity
                 AccessTokenLifetime = 1800, //30 minutes
                 AllowedGrantTypes = GrantTypes.ClientCredentials,
                 ClientSecrets = {
-                    new Secret ("9pwJgpgpu6PNJi".Sha256()),
-                },
+                        new Secret ("9pwJgpgpu6PNJi".Sha256 ()),
+                    },
                 AllowedScopes = {
-                    "geofencesApi",
-                }
+                        "geofencesApi",
+                    }
             });
             clients.Add(new Client
             {
@@ -170,11 +175,11 @@ namespace Ranger.Identity
                 AccessTokenLifetime = 1800, //30 minutes
                 AllowedGrantTypes = GrantTypes.ClientCredentials,
                 ClientSecrets = {
-                    new Secret ("Esyz6NkukU98TqzpXU".Sha256()),
-                },
+                        new Secret ("Esyz6NkukU98TqzpXU".Sha256 ()),
+                    },
                 AllowedScopes = {
-                    "breadcrumbsApi",
-                }
+                        "breadcrumbsApi",
+                    }
             });
             clients.Add(new Client
             {
@@ -183,11 +188,11 @@ namespace Ranger.Identity
                 AccessTokenLifetime = 1800, //30 minutes
                 AllowedGrantTypes = GrantTypes.ClientCredentials,
                 ClientSecrets = {
-                    new Secret ("4T3SXqXaD6GyGHn4RY".Sha256())
-                },
+                        new Secret ("4T3SXqXaD6GyGHn4RY".Sha256 ())
+                    },
                 AllowedScopes = {
-                    "subscriptionsApi"
-                }
+                        "subscriptionsApi"
+                    }
             });
             clients.Add(new Client
             {
@@ -198,14 +203,14 @@ namespace Ranger.Identity
                 RequirePkce = true,
                 RequireClientSecret = false,
                 RedirectUris = { String.Empty },
-                PostLogoutRedirectUris = { $"https://{GlobalConfig.RedirectHost}" },
+                PostLogoutRedirectUris = { $"https://{GlobalConfig.IdentityServerOptions.RedirectHost}" },
                 RequireConsent = false,
 
                 AllowedScopes = {
-                IdentityServerConstants.StandardScopes.OpenId,
-                IdentityServerConstants.StandardScopes.Profile,
-                "apiGateway"
-                },
+                        IdentityServerConstants.StandardScopes.OpenId,
+                        IdentityServerConstants.StandardScopes.Profile,
+                        "apiGateway"
+                    },
             });
 
             if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != Environments.Production)
@@ -225,27 +230,27 @@ namespace Ranger.Identity
                     AllowedCorsOrigins = { "https://www.getpostman.com" },
 
                     ClientSecrets = {
-                    new Secret ("cKprgh9wYKWcsm".Sha256 ()),
-                    new Secret ("89pCcXHuDYTXY".Sha256 ()),
-                    new Secret ("usGwT8Qsp4La2".Sha256()),
-                    new Secret ("6HyhzSoSHvxTG".Sha256()),
-                    new Secret ("9pwJgpgpu6PNJi".Sha256()),
-                    new Secret ("Esyz6NkukU98TqzpXU".Sha256()),
-                    new Secret ("4T3SXqXaD6GyGHn4RY".Sha256())
-                },
+                            new Secret ("cKprgh9wYKWcsm".Sha256 ()),
+                            new Secret ("89pCcXHuDYTXY".Sha256 ()),
+                            new Secret ("usGwT8Qsp4La2".Sha256 ()),
+                            new Secret ("6HyhzSoSHvxTG".Sha256 ()),
+                            new Secret ("9pwJgpgpu6PNJi".Sha256 ()),
+                            new Secret ("Esyz6NkukU98TqzpXU".Sha256 ()),
+                            new Secret ("4T3SXqXaD6GyGHn4RY".Sha256 ())
+                        },
 
                     AllowedScopes = {
-                        IdentityServerConstants.StandardScopes.OpenId,
-                        IdentityServerConstants.LocalApi.ScopeName,
-                        IdentityServerConstants.StandardScopes.Profile,
-                        "apiGateway",
-                        "tenantsApi",
-                        "projectsApi",
-                        "integrationsApi",
-                        "geofencesApi",
-                        "breadcrumbsApi",
-                        "subscriptionsApi"
-                    }
+                            IdentityServerConstants.StandardScopes.OpenId,
+                            IdentityServerConstants.LocalApi.ScopeName,
+                            IdentityServerConstants.StandardScopes.Profile,
+                            "apiGateway",
+                            "tenantsApi",
+                            "projectsApi",
+                            "integrationsApi",
+                            "geofencesApi",
+                            "breadcrumbsApi",
+                            "subscriptionsApi"
+                        }
                 });
             }
 
