@@ -6,13 +6,12 @@ services:
 branches:
     only:
         - master
-        - dev
 before_script:
     - chmod -R a+x scripts
 script:
-    - "./scripts/travis-build.sh"
+    - './scripts/travis-build.sh'
 after_success:
-    - "./scripts/travis-docker-publish.sh"
+    - './scripts/travis-docker-publish.sh'
 notifications:
     email: false
     slack:
