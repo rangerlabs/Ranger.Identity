@@ -142,7 +142,9 @@ namespace Ranger.Identity
             services.AddSingleton<ICorsPolicyService, CorsPolicyService>();
 
             services.AddDataProtection()
+                .SetApplicationName("Identity")
                 .ProtectKeysWithCertificate(new X509Certificate2(configuration["DataProtectionCertPath:Path"]))
+                .UnprotectKeysWithAnyCertificate(new X509Certificate2(configuration["DataProtectionCertPath:Path"]))
                 .PersistKeysToDbContext<RangerIdentityDbContext>();
 
             services.AddLiveHealthCheck();
