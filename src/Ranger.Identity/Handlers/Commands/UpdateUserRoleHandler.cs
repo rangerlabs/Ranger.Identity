@@ -35,67 +35,60 @@ namespace Ranger.Identity
         {
             logger.LogInformation($"Updating user permissions for '{command.Email}' in domain '{command.TenantId}'");
 
-            try
+            var apiResponse = await tenantsHttpClient.GetTenantByIdAsync<TenantOrganizationNameModel>(command.TenantId);
+            var localUserManager = userManager(apiResponse.Result);
+
+            var commandingUser = await localUserManager.FindByEmailAsync(command.CommandingUserEmail);
+            var user = await localUserManager.FindByEmailAsync(command.Email);
+
+            var canUpdateUser = await AssignmentValidator.ValidateAsync(commandingUser, user, localUserManager);
+            if (!canUpdateUser)
             {
-                var apiResponse = await tenantsHttpClient.GetTenantByIdAsync<TenantOrganizationNameModel>(command.TenantId);
-                var localUserManager = userManager(apiResponse.Result);
+                throw new RangerException("Unauthorized to make changes to the requested user");
+            }
 
-                var commandingUser = await localUserManager.FindByEmailAsync(command.CommandingUserEmail);
-                var user = await localUserManager.FindByEmailAsync(command.Email);
+            RolesEnum newRole;
+            if (!Enum.TryParse<RolesEnum>(command.Role, true, out newRole))
+            {
+                throw new RangerException("The role was not a system role");
+            }
 
-                var canUpdateUser = await AssignmentValidator.ValidateAsync(commandingUser, user, localUserManager);
-                if (!canUpdateUser)
+            var currentRole = await localUserManager.GetRangerRoleAsync(user);
+            if (newRole != currentRole)
+            {
+                IdentityResult roleRemoveResult = null;
+                var roleAddResult = await localUserManager.AddToRoleAsync(user, command.Role);
+                if (roleAddResult.Succeeded)
                 {
-                    throw new RangerException("Unauthorized to make changes to the requested user");
-                }
-
-                RolesEnum newRole;
-                if (!Enum.TryParse<RolesEnum>(command.Role, true, out newRole))
-                {
-                    throw new RangerException("The role was not a system role");
-                }
-
-                var currentRole = await localUserManager.GetRangerRoleAsync(user);
-                if (newRole != currentRole)
-                {
-                    IdentityResult roleRemoveResult = null;
-                    var roleAddResult = await localUserManager.AddToRoleAsync(user, command.Role);
-                    if (roleAddResult.Succeeded)
+                    roleRemoveResult = await localUserManager.RemoveFromRoleAsync(user, Enum.GetName(typeof(RolesEnum), currentRole));
+                    if (!roleRemoveResult.Succeeded)
                     {
-                        roleRemoveResult = await localUserManager.RemoveFromRoleAsync(user, Enum.GetName(typeof(RolesEnum), currentRole));
-                        if (!roleRemoveResult.Succeeded)
+                        logger.LogError($"Failed to remove user '{command.Email}' in domain '{command.TenantId}' from previous role. Attempting to rolling back the addition of the requested role. {String.Join(Environment.NewLine, roleRemoveResult.Errors.ToList())}");
+                        var result = await localUserManager.RemoveFromRoleAsync(user, command.Role);
+                        if (result.Succeeded)
                         {
-                            logger.LogError($"Failed to remove user '{command.Email}' in domain '{command.TenantId}' from previous role. Attempting to rolling back the addition of the requested role. {String.Join(Environment.NewLine, roleRemoveResult.Errors.ToList())}");
-                            var result = await localUserManager.RemoveFromRoleAsync(user, command.Role);
-                            if (result.Succeeded)
-                            {
-                                logger.LogInformation($"Successfully rolled back additional role '{command.Role}' for '{command.Email}' in domain '{command.TenantId}'");
-                            }
-                            else
-                            {
-                                logger.LogError($"Failed to role back additional role '{command.Role}' for '{command.Email}' in domain '{command.TenantId}'");
-                            }
-                            throw new RangerException("An unspecified error occurred. Please try again later");
+                            logger.LogInformation($"Successfully rolled back additional role '{command.Role}' for '{command.Email}' in domain '{command.TenantId}'");
                         }
-                    }
-                    else
-                    {
-                        logger.LogError($"Failed to add role '{command.Role}' for '{command.Email}' in domain '{command.TenantId}'");
+                        else
+                        {
+                            logger.LogError($"Failed to role back additional role '{command.Role}' for '{command.Email}' in domain '{command.TenantId}'");
+                        }
                         throw new RangerException("An unspecified error occurred. Please try again later");
                     }
                 }
                 else
                 {
-                    logger.LogWarning("The user role was not modified");
+                    logger.LogError($"Failed to add role '{command.Role}' for '{command.Email}' in domain '{command.TenantId}'");
+                    throw new RangerException("An unspecified error occurred. Please try again later");
                 }
-
-                busPublisher.Publish(new UserRoleUpdated(command.TenantId, user.Id, command.Email, user.FirstName, command.Role), context);
             }
-            catch (Exception ex)
+            else
             {
-                logger.LogError(ex, "Failed to update user permissions");
-                throw new RangerException("An unspecified error occurred. Please try again later");
+                logger.LogWarning("The user role was not modified");
             }
+
+            busPublisher.Publish(new UserRoleUpdated(command.TenantId, user.Id, command.Email, user.FirstName, command.Role), context);
+
         }
     }
 }

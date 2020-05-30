@@ -221,8 +221,7 @@ namespace Ranger.Identity
                 .SubscribeCommand<TransferPrimaryOwnership>((c, e) =>
                     new TransferPrimaryOwnershipRejected(e.Message, ""))
                 .SubscribeCommand<GeneratePrimaryOwnershipTransferToken>((c, e) =>
-                    new GeneratePrimaryOwnershipTransferTokenRejected(e.Message, ""))
-                ;
+                    new GeneratePrimaryOwnershipTransferTokenRejected(e.Message, ""));
 
             app.UsePathBase("/auth");
             if (Environment.IsDevelopment())
