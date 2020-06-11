@@ -8,11 +8,6 @@ namespace Ranger.Identity
 {
     public class Config
     {
-        private readonly IdentityServerOptions identityServerOptions;
-        public Config(IdentityServerOptions identityServerOptions)
-        {
-            this.identityServerOptions = identityServerOptions;
-        }
 
         public static IEnumerable<IdentityResource> GetIdentityResources()
         {
