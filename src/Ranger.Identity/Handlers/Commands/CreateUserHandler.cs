@@ -79,7 +79,7 @@ namespace Ranger.Identity
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to create user");
-                throw;
+                throw new RangerException($"An unexpected error occurred creating user '{user.Email}'");
             }
 
             if (!createResult.Succeeded)
@@ -88,7 +88,7 @@ namespace Ranger.Identity
                 {
                     throw new RangerException("The email address is already in use");
                 }
-                throw new RangerException("Failed to create user");
+                throw new RangerException($"An unexpected error occurred creating user '{user.Email}'");
             }
 
             var emailToken = HttpUtility.UrlEncode(await localUserManager.GenerateEmailConfirmationTokenAsync(user));

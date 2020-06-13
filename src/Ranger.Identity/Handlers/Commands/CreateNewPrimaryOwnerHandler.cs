@@ -56,13 +56,13 @@ namespace Ranger.Identity
             }
             catch (EventStreamDataConstraintException ex)
             {
-                logger.LogError(ex, "Falied to create user");
+                logger.LogDebug(ex, "Failed to create user {Email}", command.Email);
                 throw new RangerException(ex.Message);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to create user");
-                throw;
+                logger.LogError(ex, "An unexpected error occurred creating user {Email}", command.Email);
+                throw new RangerException($"An unexpected error occurred creating user '{command.Email}'");
             }
 
             this.busPublisher.Publish(new NewPrimaryOwnerCreated(user.Email, user.FirstName, user.LastName, command.TenantId, "PrimaryOwner"), context);
