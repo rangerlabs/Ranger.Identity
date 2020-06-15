@@ -385,7 +385,6 @@ namespace Ranger.Identity
         ///<param name="email">The email of the user who is requesting a password reset</param>
         ///<param name="passwordResetModel">The model necessary to reset the user's password</param>
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status304NotModified)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpPut("/users/{tenantId}/{email}/password-reset")]
         public async Task<ApiResponse> PutPasswordResetRequest(string tenantId, string email, PasswordResetModel passwordResetModel)
