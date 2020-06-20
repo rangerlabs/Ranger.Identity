@@ -29,6 +29,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Ranger.ApiUtilities;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Ranger.Monitoring.HealthChecks;
+using Newtonsoft.Json.Converters;
 
 namespace Ranger.Identity
 {
@@ -50,6 +51,7 @@ namespace Ranger.Identity
             services.AddControllersWithViews()
             .AddNewtonsoftJson(options =>
             {
+                options.SerializerSettings.Converters.Add(new StringEnumConverter());
                 options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
                 options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
             });
