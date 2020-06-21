@@ -8,8 +8,8 @@
             <div class="mdc-elevation--z3">
                 @if (Model.EnableLocalLogin)
                 {
+                    <h5 class="ranger-gutters mdc-typography--headline5 text-align-center">@Model.OrganizationName</h5>
                     <h5 class="ranger-gutters mdc-typography--headline5 text-align-center">Login</h5>
-                    <h6 class="ranger-gutters mdc-typography--headline5 text-align-center">@Model.OrganizationName</h6>
                     <form asp-route="Login">
                         <input type="hidden" asp-for="ReturnUrl" />
                             <div class="mdc-text-field mdc-text-field--fullwidth" data-mdc-auto-init="MDCTextField">
