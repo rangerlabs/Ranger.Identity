@@ -46,17 +46,15 @@ namespace IdentityServer4.Quickstart.UI
         {
             if (ModelState.IsValid)
             {
-                var tenantApiResponse = await _tenantsClient.GetTenantByDomainAsync<TenantOrganizationNameModel>(Request.Host.GetDomainFromHost());
+                var domain = Request.Host.GetDomainFromHost();
+                var tenantApiResponse = await _tenantsClient.GetTenantByDomainAsync<TenantOrganizationNameModel>(domain);
                 var localUserManager = _userManager(tenantApiResponse.Result);
                 var user = await localUserManager.FindByEmailAsync(model.Email);
                 if (user != null)
                 {
-                    var (_, domain) = GetDomainFromRequestHost();
-                    var apiResponse = await _tenantsClient.GetTenantByIdAsync<TenantOrganizationNameModel>(domain);
-                    if (!apiResponse.IsError)
                     {
                         var token = HttpUtility.UrlEncode(await localUserManager.GeneratePasswordResetTokenAsync(user));
-                        _busPublisher.Send(new SendResetPasswordEmail(user.FirstName, model.Email, domain, user.Id, apiResponse.Result.OrganizationName, token), HttpContext.GetCorrelationContextFromHttpContext<SendResetPasswordEmail>(domain, model.Email));
+                        _busPublisher.Send(new SendResetPasswordEmail(user.FirstName, model.Email, domain, user.Id, tenantApiResponse.Result.OrganizationName, token), HttpContext.GetCorrelationContextFromHttpContext<SendResetPasswordEmail>(domain, model.Email));
                     }
                     ModelState.AddModelError("", "Failed to reset password");
                 }
