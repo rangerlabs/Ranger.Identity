@@ -268,11 +268,14 @@ namespace IdentityServer4.Quickstart.UI
             var context = await _interaction.GetAuthorizationContextAsync(returnUrl);
             if (context?.IdP != null && await _schemeProvider.GetSchemeAsync(context.IdP) != null)
             {
+                var (_, domain) = GetDomainFromRequestHost();
+                var apiResponse = await _tenantsClient.GetTenantByDomainAsync<TenantOrganizationNameModel>(domain);
                 var local = context.IdP == IdentityServer4.IdentityServerConstants.LocalIdentityProvider;
 
                 // this is meant to short circuit the UI and only trigger the one external IdP
                 var vm = new LoginViewModel
                 {
+                    OrganizationName = apiResponse.Result.OrganizationName,
                     EnableLocalLogin = local,
                     ReturnUrl = returnUrl,
                     Email = context?.LoginHint,
