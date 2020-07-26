@@ -6,14 +6,9 @@ services:
         ports:
             - '4000:5000'
         networks:
-            - identity
             - ranger
 
 networks:
     ranger:
         name: ranger-network
-        external: true
-
-    identity:
-        name: identity-network
         external: true
