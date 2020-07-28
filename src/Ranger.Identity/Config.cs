@@ -216,13 +216,13 @@ namespace Ranger.Identity
                     ClientName = "PostmanClient",
 
                     AccessTokenLifetime = 900, //15 minutes
-                    AllowedGrantTypes = GrantTypes.Code,
+                    AllowedGrantTypes = GrantTypes.Implicit,
                     AllowAccessTokensViaBrowser = true,
                     RequireConsent = false,
                     EnableLocalLogin = true,
-                    RedirectUris = { "https://www.getpostman.com/oauth2/callback" },
-                    PostLogoutRedirectUris = { "https://www.getpostman.com" },
-                    AllowedCorsOrigins = { "https://www.getpostman.com" },
+                    RedirectUris = { "https://oauth.pstmn.io/v1/callback" },
+                    PostLogoutRedirectUris = { "https://www.postman.com" },
+                    AllowedCorsOrigins = { "https://www.postman.com" },
 
                     ClientSecrets = {
                             new Secret ("cKprgh9wYKWcsm".Sha256 ()),
