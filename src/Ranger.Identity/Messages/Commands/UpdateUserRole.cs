@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Ranger.Common;
 using Ranger.RabbitMQ;
 
 namespace Ranger.Identity
@@ -9,9 +10,9 @@ namespace Ranger.Identity
         public string TenantId { get; }
         public string Email { get; }
         public string CommandingUserEmail { get; }
-        public string Role { get; }
+        public RolesEnum Role { get; }
 
-        public UpdateUserRole(string tenantId, string email, string commandingUserEmail, string role = "")
+        public UpdateUserRole(string tenantId, string email, string commandingUserEmail, RolesEnum role)
         {
             if (string.IsNullOrWhiteSpace(tenantId))
             {

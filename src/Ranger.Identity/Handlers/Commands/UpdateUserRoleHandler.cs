@@ -47,24 +47,19 @@ namespace Ranger.Identity
                 throw new RangerException("Unauthorized to make changes to the requested user");
             }
 
-            RolesEnum newRole;
-            if (!Enum.TryParse<RolesEnum>(command.Role, true, out newRole))
-            {
-                throw new RangerException("The role was not a system role");
-            }
 
             var currentRole = await localUserManager.GetRangerRoleAsync(user);
-            if (newRole != currentRole)
+            if (command.Role != currentRole)
             {
                 IdentityResult roleRemoveResult = null;
-                var roleAddResult = await localUserManager.AddToRoleAsync(user, command.Role);
+                var roleAddResult = await localUserManager.AddToRoleAsync(user, Enum.GetName(typeof(RolesEnum), command.Role));
                 if (roleAddResult.Succeeded)
                 {
                     roleRemoveResult = await localUserManager.RemoveFromRoleAsync(user, Enum.GetName(typeof(RolesEnum), currentRole));
                     if (!roleRemoveResult.Succeeded)
                     {
                         logger.LogError($"Failed to remove user '{command.Email}' in domain '{command.TenantId}' from previous role. Attempting to rolling back the addition of the requested role. {String.Join(Environment.NewLine, roleRemoveResult.Errors.ToList())}");
-                        var result = await localUserManager.RemoveFromRoleAsync(user, command.Role);
+                        var result = await localUserManager.RemoveFromRoleAsync(user, Enum.GetName(typeof(RolesEnum), command.Role));
                         if (result.Succeeded)
                         {
                             logger.LogInformation($"Successfully rolled back additional role '{command.Role}' for '{command.Email}' in domain '{command.TenantId}'");

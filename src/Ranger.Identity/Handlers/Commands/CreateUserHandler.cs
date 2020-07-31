@@ -74,7 +74,7 @@ namespace Ranger.Identity
             try
             {
                 createResult = await localUserManager.CreateAsync(user, GlobalConfig.TempPassword);
-                roleResult = await localUserManager.AddToRoleAsync(user, command.Role);
+                roleResult = await localUserManager.AddToRoleAsync(user, Enum.GetName(typeof(RolesEnum), command.Role));
             }
             catch (Exception ex)
             {
@@ -93,7 +93,7 @@ namespace Ranger.Identity
 
             var emailToken = HttpUtility.UrlEncode(await localUserManager.GenerateEmailConfirmationTokenAsync(user));
 
-            busPublisher.Publish(new UserCreated(command.TenantId, user.Id, command.Email, user.FirstName, command.Role, emailToken, command.AuthorizedProjectIds), context);
+            busPublisher.Publish(new UserCreated(command.TenantId, user.Id, command.Email, user.FirstName,command.Role, emailToken, command.AuthorizedProjectIds), context);
         }
     }
 }
