@@ -17,6 +17,7 @@ $mdc-typography-font-family: unquote("'Lato', sans-serif");
 
 .mdc-elevation--z3 {
     padding: 32px;
+    background-color: white;
 }
 
 .mdc-text-field {
@@ -35,6 +36,11 @@ $mdc-typography-font-family: unquote("'Lato', sans-serif");
     margin: 0px;
 }
 
+main {
+    height: 100%;
+    background-color: #fafafa;
+}
+
 a {
     color: #000;
     text-decoration: none;
@@ -43,6 +49,11 @@ a {
 .ranger-gutters {
     margin-top: 12px;
     margin-bottom: 12px;
+}
+
+.ranger-title {
+    margin-top: 40px;
+    margin-bottom: 40px;
 }
 
 .bottom-form-controls {

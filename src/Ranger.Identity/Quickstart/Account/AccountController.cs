@@ -78,32 +78,34 @@ namespace IdentityServer4.Quickstart.UI
             // check if we are in the context of an authorization request
             var context = await _interaction.GetAuthorizationContextAsync(model.ReturnUrl);
 
-            // the user clicked the "cancel" button
-            if (button != "login")
-            {
-                if (context != null)
-                {
-                    // if the user cancels, send a result back into IdentityServer as if they 
-                    // denied the consent (even if this client does not require consent).
-                    // this will send back an access denied OIDC error response to the client.
-                    await _interaction.GrantConsentAsync(context, ConsentResponse.Denied);
+            //Ranger is does not have a "cancel" button on the login page and we disable the 'button' on click which results in button == null
+            // this code is unusable
+            // // the user clicked the "cancel" button
+            // if (button != "login")
+            // {
+            //     if (context != null)
+            //     {
+            //         // if the user cancels, send a result back into IdentityServer as if they 
+            //         // denied the consent (even if this client does not require consent).
+            //         // this will send back an access denied OIDC error response to the client.
+            //         await _interaction.GrantConsentAsync(context, ConsentResponse.Denied);
 
-                    // we can trust model.ReturnUrl since GetAuthorizationContextAsync returned non-null
-                    if (await _clientStore.IsPkceClientAsync(context.ClientId))
-                    {
-                        // if the client is PKCE then we assume it's native, so this change in how to
-                        // return the response is for better UX for the end user.
-                        return View("Redirect", new RedirectViewModel { RedirectUrl = model.ReturnUrl });
-                    }
+            //         // we can trust model.ReturnUrl since GetAuthorizationContextAsync returned non-null
+            //         if (await _clientStore.IsPkceClientAsync(context.ClientId))
+            //         {
+            //             // if the client is PKCE then we assume it's native, so this change in how to
+            //             // return the response is for better UX for the end user.
+            //             return View("Redirect", new RedirectViewModel { RedirectUrl = model.ReturnUrl });
+            //         }
 
-                    return Redirect(model.ReturnUrl);
-                }
-                else
-                {
-                    // since we don't have a valid context, then we just go back to the home page
-                    return Redirect("~/");
-                }
-            }
+            //         return Redirect(model.ReturnUrl);
+            //     }
+            //     else
+            //     {
+            //         // since we don't have a valid context, then we just go back to the home page
+            //         return Redirect("~/");
+            //     }
+            // }
 
             if (ModelState.IsValid)
             {

@@ -214,7 +214,6 @@ namespace Ranger.Identity
                 {
                     ClientId = "postman",
                     ClientName = "PostmanClient",
-
                     AccessTokenLifetime = 900, //15 minutes
                     AllowedGrantTypes = GrantTypes.Implicit,
                     AllowAccessTokensViaBrowser = true,
