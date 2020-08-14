@@ -48,7 +48,10 @@ namespace Ranger.Identity
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllersWithViews()
+            services.AddControllersWithViews(options =>
+            {
+                options.Filters.Add<OperationCanceledExceptionFilter>();
+            })
             .AddNewtonsoftJson(options =>
             {
                 options.SerializerSettings.Converters.Add(new StringEnumConverter());
