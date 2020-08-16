@@ -208,13 +208,11 @@ namespace Ranger.Identity
             forwardOptions.KnownProxies.Clear();
             app.UseForwardedHeaders(forwardOptions);
 
-            applicationLifetime.ApplicationStopping.Register(OnShutdown);
-
             //TODO: Only initialize once and not in production
             InitializeDatabase(app, loggerFactory.CreateLogger<Startup>());
 
             app.UseIdentityServer();
-            this.busSubscriber = app.UseRabbitMQ()
+            this.busSubscriber = app.UseRabbitMQ(applicationLifetime)
                 .SubscribeCommand<CreateNewPrimaryOwner>((c, e) =>
                    new CreateNewPrimaryOwnerRejected(e.Message, ""))
                 .SubscribeCommand<CreateUser>((c, e) =>
@@ -321,11 +319,6 @@ namespace Ranger.Identity
                 }
                 context.SaveChanges();
             }
-        }
-
-        private void OnShutdown()
-        {
-            this.busSubscriber.Dispose();
         }
     }
 }
