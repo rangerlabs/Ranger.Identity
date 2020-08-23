@@ -224,7 +224,11 @@ namespace Ranger.Identity
                 .SubscribeCommand<TransferPrimaryOwnership>((c, e) =>
                     new TransferPrimaryOwnershipRejected(e.Message, ""))
                 .SubscribeCommand<GeneratePrimaryOwnershipTransferToken>((c, e) =>
-                    new GeneratePrimaryOwnershipTransferTokenRejected(e.Message, ""));
+                    new GeneratePrimaryOwnershipTransferTokenRejected(e.Message, ""))
+                .SubscribeCommand<DeleteUser>((c, e) =>
+                    new DeleteUserRejected(e.Message, ""))
+                .SubscribeCommand<DeleteAccount>((c, e) =>
+                    new DeleteAccountRejected(e.Message, ""));
 
             app.UsePathBase("/auth");
             if (Environment.IsDevelopment())
