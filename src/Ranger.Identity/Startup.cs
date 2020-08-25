@@ -236,6 +236,7 @@ namespace Ranger.Identity
                 app.UseSwagger("v1", "Identity API");
             }
             app.UseAutoWrapper(false, "/users");
+            app.UseUnhandedExceptionLogger();
             app.UseStaticFiles();
             app.UseRouting();
             app.UseIdentityServer();
