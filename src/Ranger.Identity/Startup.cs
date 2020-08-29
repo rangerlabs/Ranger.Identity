@@ -212,7 +212,7 @@ namespace Ranger.Identity
             InitializeDatabase(app, loggerFactory.CreateLogger<Startup>());
 
             app.UseIdentityServer();
-            this.busSubscriber = app.UseRabbitMQ(applicationLifetime)
+            this.busSubscriber = app.UseRabbitMQ()
                 .SubscribeCommand<CreateNewPrimaryOwner>((c, e) =>
                    new CreateNewPrimaryOwnerRejected(e.Message, ""))
                 .SubscribeCommand<CreateUser>((c, e) =>
