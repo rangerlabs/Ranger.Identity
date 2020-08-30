@@ -37,8 +37,6 @@ namespace Ranger.Identity
     {
         private readonly IConfiguration configuration;
         private IWebHostEnvironment Environment;
-        private ILoggerFactory loggerFactory;
-        private IBusSubscriber busSubscriber;
 
         public Startup(IWebHostEnvironment environment, IConfiguration configuration)
         {
@@ -197,7 +195,6 @@ namespace Ranger.Identity
 
         public void Configure(IApplicationBuilder app, IHostApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory)
         {
-            this.loggerFactory = loggerFactory;
             var forwardOptions = new ForwardedHeadersOptions
             {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
@@ -212,22 +209,22 @@ namespace Ranger.Identity
             InitializeDatabase(app, loggerFactory.CreateLogger<Startup>());
 
             app.UseIdentityServer();
-            this.busSubscriber = app.UseRabbitMQ()
-                .SubscribeCommand<CreateNewPrimaryOwner>((c, e) =>
+            app.UseRabbitMQ()
+                .SubscribeCommandWithHandler<CreateNewPrimaryOwner>((c, e) =>
                    new CreateNewPrimaryOwnerRejected(e.Message, ""))
-                .SubscribeCommand<CreateUser>((c, e) =>
+                .SubscribeCommandWithHandler<CreateUser>((c, e) =>
                    new CreateUserRejected(e.Message, ""))
-                .SubscribeCommand<InitializeTenant>((c, e) =>
+                .SubscribeCommandWithHandler<InitializeTenant>((c, e) =>
                    new InitializeTenantRejected(e.Message, ""))
-                .SubscribeCommand<UpdateUserRole>((c, e) =>
+                .SubscribeCommandWithHandler<UpdateUserRole>((c, e) =>
                     new UpdateUserRoleRejected(e.Message, ""))
-                .SubscribeCommand<TransferPrimaryOwnership>((c, e) =>
+                .SubscribeCommandWithHandler<TransferPrimaryOwnership>((c, e) =>
                     new TransferPrimaryOwnershipRejected(e.Message, ""))
-                .SubscribeCommand<GeneratePrimaryOwnershipTransferToken>((c, e) =>
+                .SubscribeCommandWithHandler<GeneratePrimaryOwnershipTransferToken>((c, e) =>
                     new GeneratePrimaryOwnershipTransferTokenRejected(e.Message, ""))
-                .SubscribeCommand<DeleteUser>((c, e) =>
+                .SubscribeCommandWithHandler<DeleteUser>((c, e) =>
                     new DeleteUserRejected(e.Message, ""))
-                .SubscribeCommand<DeleteAccount>((c, e) =>
+                .SubscribeCommandWithHandler<DeleteAccount>((c, e) =>
                     new DeleteAccountRejected(e.Message, ""));
 
             app.UsePathBase("/auth");
