@@ -20,8 +20,6 @@ namespace Ranger.Identity.Tests
 
         [Fact]
         public Task Identity_Starts()
-        {
-            return Task.CompletedTask;
-        }
+        { }
     }
 }
