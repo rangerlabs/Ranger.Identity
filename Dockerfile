@@ -30,6 +30,7 @@ ARG MYGET_API_KEY
 
 COPY *.sln ./
 COPY ./src/Ranger.Identity/Ranger.Identity.csproj ./src/Ranger.Identity/Ranger.Identity.csproj
+COPY ./test/Ranger.Identity.Tests/Ranger.Identity.Tests.csproj ./test/Ranger.Identity.Tests/Ranger.Identity.Tests.csproj
 COPY ./scripts ./scripts
 
 RUN ./scripts/create-nuget-config.sh ${MYGET_API_KEY}
