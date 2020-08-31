@@ -14,23 +14,26 @@ namespace Ranger.Identity
 {
     public class Program
     {
+        // Necessary to have because we're running an IHost and need to configure the Webhost,
+        // this can be set from CustomWebApplicationFactory for integration testing
+        public static string HostingUrl;
         public static async Task Main(string[] args)
         {
             var config = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json", optional: false, reloadOnChange: true)
+                .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables()
                 .Build();
 
-            var host = BuildHost(config["serverBindingUrl"], args);
+            HostingUrl = config["serverBindingUrl"];
+            var host = CreateHostBuilder(args).Build();
+
             using (var scope = host.Services.CreateScope())
             {
                 var rangerIdentityDbInitializer = scope.ServiceProvider.GetRequiredService<IIdentityDbContextInitializer>();
                 var configurationDbInitializer = scope.ServiceProvider.GetRequiredService<IConfigurationDbContextInitializer>();
                 var persistedGrantsDbInitializer = scope.ServiceProvider.GetRequiredService<IPersistedGrantDbContextInitializer>();
-
-                var env = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
 
                 rangerIdentityDbInitializer.Migrate();
                 await rangerIdentityDbInitializer.EnsureRowLevelSecurityApplied();
@@ -45,18 +48,17 @@ namespace Ranger.Identity
             host.Run();
         }
 
-        public static IHost BuildHost(string serverBindingUrl, string[] args) =>
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
             .UseServiceProviderFactory(new AutofacServiceProviderFactory())
             .ConfigureWebHostDefaults(builder =>
             {
                 builder
                 .UseSetting(WebHostDefaults.DetailedErrorsKey, "true")
-                .UseUrls(serverBindingUrl)
                 .UseLogging()
+                .UseUrls(HostingUrl)
                 .UseStartup<Startup>()
                 .UseContentRoot(Directory.GetCurrentDirectory());
-            })
-            .Build();
+            });
     }
 }
