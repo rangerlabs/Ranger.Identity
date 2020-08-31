@@ -138,17 +138,26 @@ namespace Ranger.Identity
                         options.TokenCleanupInterval = 60;
                     });
 
-            identityServerBuilder.AddSigningCredential(new X509Certificate2(configuration["IdentitySigningCertPath:Path"]));
-            identityServerBuilder.AddValidationKey(new X509Certificate2(configuration["IdentityValidationCertPath:Path"]));
-
             services.AddLocalApiAuthentication();
             services.AddSingleton<ICorsPolicyService, CorsPolicyService>();
-
-            services.AddDataProtection()
-                .SetApplicationName("Identity")
-                .ProtectKeysWithCertificate(new X509Certificate2(configuration["DataProtectionCertPath:Path"]))
-                .UnprotectKeysWithAnyCertificate(new X509Certificate2(configuration["DataProtectionCertPath:Path"]))
-                .PersistKeysToDbContext<RangerIdentityDbContext>();
+            // Workaround for MAC validation issues on MacOS
+            if (configuration.IsIntegrationTesting())
+            {
+                identityServerBuilder.AddDeveloperSigningCredential();
+                services.AddDataProtection()
+                   .SetApplicationName("Identity")
+                   .PersistKeysToDbContext<RangerIdentityDbContext>();
+            }
+            else
+            {
+                identityServerBuilder.AddSigningCredential(new X509Certificate2(configuration["IdentitySigningCertPath:Path"]));
+                identityServerBuilder.AddValidationKey(new X509Certificate2(configuration["IdentityValidationCertPath:Path"]));
+                services.AddDataProtection()
+                    .SetApplicationName("Identity")
+                    .ProtectKeysWithCertificate(new X509Certificate2(configuration["DataProtectionCertPath:Path"]))
+                    .UnprotectKeysWithAnyCertificate(new X509Certificate2(configuration["DataProtectionCertPath:Path"]))
+                    .PersistKeysToDbContext<RangerIdentityDbContext>();
+            }
 
             services.AddLiveHealthCheck();
             services.AddEntityFrameworkHealthCheck<IdentityDbContext>();

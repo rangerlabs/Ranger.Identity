@@ -19,7 +19,7 @@ namespace Ranger.Identity.Tests
         }
 
         [Fact]
-        public Task Identity_Starts()
+        public void Identity_Starts()
         { }
     }
 }
