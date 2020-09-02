@@ -31,7 +31,7 @@ namespace IdentityServer4.Quickstart.UI
         private readonly IClientStore _clientStore;
         private readonly IAuthenticationSchemeProvider _schemeProvider;
         private readonly IEventService _events;
-        private readonly TenantsHttpClient _tenantsClient;
+        private readonly ITenantsHttpClient _tenantsClient;
 
         public AccountController(
             Func<TenantOrganizationNameModel, RangerUserManager> userManager,
@@ -40,7 +40,7 @@ namespace IdentityServer4.Quickstart.UI
             IClientStore clientStore,
             IAuthenticationSchemeProvider schemeProvider,
             IEventService events,
-            TenantsHttpClient tenantsClient)
+            ITenantsHttpClient tenantsClient)
         {
             this.userManager = userManager;
             _interaction = interaction;

@@ -20,9 +20,9 @@ namespace IdentityServer4.Quickstart.UI
     {
         private readonly Func<TenantOrganizationNameModel, RangerUserManager> _userManager;
         private readonly IBusPublisher _busPublisher;
-        private readonly TenantsHttpClient _tenantsClient;
+        private readonly ITenantsHttpClient _tenantsClient;
 
-        public PasswordResetController(IBusPublisher busPublisher, Func<TenantOrganizationNameModel, RangerUserManager> userManager, TenantsHttpClient tenantsClient)
+        public PasswordResetController(IBusPublisher busPublisher, Func<TenantOrganizationNameModel, RangerUserManager> userManager, ITenantsHttpClient tenantsClient)
         {
             _tenantsClient = tenantsClient;
             _busPublisher = busPublisher;

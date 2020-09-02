@@ -19,17 +19,17 @@ namespace Ranger.Identity
         private readonly IBusPublisher busPublisher;
         private readonly ILogger<CreateUserHandler> logger;
         private readonly Func<TenantOrganizationNameModel, RangerUserManager> userManager;
-        private readonly SubscriptionsHttpClient subscriptionsHttpClient;
-        private readonly ProjectsHttpClient projectsHttpClient;
-        private readonly TenantsHttpClient tenantsHttpClient;
+        private readonly ISubscriptionsHttpClient subscriptionsHttpClient;
+        private readonly IProjectsHttpClient projectsHttpClient;
+        private readonly ITenantsHttpClient tenantsHttpClient;
 
         public CreateUserHandler(
             IBusPublisher busPublisher,
             ILogger<CreateUserHandler> logger,
             Func<TenantOrganizationNameModel, RangerUserManager> userManager,
-            SubscriptionsHttpClient subscriptionsHttpClient,
-            ProjectsHttpClient projectsHttpClient,
-            TenantsHttpClient tenantsHttpClient)
+            ISubscriptionsHttpClient subscriptionsHttpClient,
+            IProjectsHttpClient projectsHttpClient,
+            ITenantsHttpClient tenantsHttpClient)
         {
             this.busPublisher = busPublisher;
             this.logger = logger;

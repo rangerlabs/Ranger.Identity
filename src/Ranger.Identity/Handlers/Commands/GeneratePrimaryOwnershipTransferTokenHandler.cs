@@ -16,13 +16,13 @@ namespace Ranger.Identity.Handlers.Commands
         private readonly IBusPublisher busPublisher;
         private readonly ILogger<GeneratePrimaryOwnershipTransferTokenHandler> logger;
         private readonly Func<TenantOrganizationNameModel, RangerUserManager> userManager;
-        private readonly TenantsHttpClient tenantsHttpClient;
+        private readonly ITenantsHttpClient tenantsHttpClient;
 
         public GeneratePrimaryOwnershipTransferTokenHandler(
             IBusPublisher busPublisher,
             ILogger<GeneratePrimaryOwnershipTransferTokenHandler> logger,
             Func<TenantOrganizationNameModel, RangerUserManager> userManager,
-            TenantsHttpClient tenantsHttpClient)
+            ITenantsHttpClient tenantsHttpClient)
         {
             this.busPublisher = busPublisher;
             this.logger = logger;

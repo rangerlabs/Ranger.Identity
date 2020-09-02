@@ -18,13 +18,13 @@ namespace Ranger.Identity
         private readonly IBusPublisher busPublisher;
         private readonly ILogger<UpdateUserRoleHandler> logger;
         private readonly Func<TenantOrganizationNameModel, RangerUserManager> userManager;
-        private readonly TenantsHttpClient tenantsHttpClient;
+        private readonly ITenantsHttpClient tenantsHttpClient;
 
         public UpdateUserRoleHandler(
             IBusPublisher busPublisher,
             ILogger<UpdateUserRoleHandler> logger,
             Func<TenantOrganizationNameModel, RangerUserManager> userManager,
-            TenantsHttpClient tenantsHttpClient)
+            ITenantsHttpClient tenantsHttpClient)
         {
             this.busPublisher = busPublisher;
             this.logger = logger;

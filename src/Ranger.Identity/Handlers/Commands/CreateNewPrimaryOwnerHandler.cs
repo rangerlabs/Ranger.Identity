@@ -18,14 +18,14 @@ namespace Ranger.Identity
     {
         private readonly IBusPublisher busPublisher;
         private readonly Func<TenantOrganizationNameModel, RangerUserManager> userManager;
-        private readonly TenantsHttpClient _tenantsClient;
+        private readonly ITenantsHttpClient _tenantsClient;
         private readonly ILogger<CreateNewPrimaryOwnerHandler> logger;
 
         public CreateNewPrimaryOwnerHandler(
             IBusPublisher busPublisher,
             Func<TenantOrganizationNameModel, RangerUserManager> userManager,
             ILogger<CreateNewPrimaryOwnerHandler> logger,
-            TenantsHttpClient tenantsClient
+            ITenantsHttpClient tenantsClient
             )
         {
             this.busPublisher = busPublisher;

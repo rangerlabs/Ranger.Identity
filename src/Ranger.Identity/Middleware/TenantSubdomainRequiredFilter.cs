@@ -14,10 +14,10 @@ namespace Ranger.Identity
         public TenantSubdomainRequiredAttribute() : base(typeof(TenantSubdomainRequiredFilterImpl)) { }
         private class TenantSubdomainRequiredFilterImpl : IAsyncActionFilter
         {
-            private readonly TenantsHttpClient tenantsClient;
+            private readonly ITenantsHttpClient tenantsClient;
             private ILogger<TenantSubdomainRequiredFilterImpl> logger { get; }
 
-            public TenantSubdomainRequiredFilterImpl(TenantsHttpClient tenantsClient, ILogger<TenantSubdomainRequiredFilterImpl> logger)
+            public TenantSubdomainRequiredFilterImpl(ITenantsHttpClient tenantsClient, ILogger<TenantSubdomainRequiredFilterImpl> logger)
             {
                 this.tenantsClient = tenantsClient;
                 this.logger = logger;

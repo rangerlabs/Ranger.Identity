@@ -23,11 +23,11 @@ namespace Ranger.Identity
     {
         private readonly Func<TenantOrganizationNameModel, RangerUserManager> userManager;
         private readonly IHttpContextAccessor contextAccessor;
-        private readonly TenantsHttpClient tenantsClient;
-        private readonly ProjectsHttpClient projectsClient;
+        private readonly ITenantsHttpClient tenantsClient;
+        private readonly IProjectsHttpClient projectsClient;
         private readonly ILogger logger;
 
-        public ApplicationUserProfileService(Func<TenantOrganizationNameModel, RangerUserManager> userManager, IHttpContextAccessor contextAccessor, TenantsHttpClient tenantsClient, ProjectsHttpClient projectsClient, ILogger<ApplicationUserProfileService> logger)
+        public ApplicationUserProfileService(Func<TenantOrganizationNameModel, RangerUserManager> userManager, IHttpContextAccessor contextAccessor, ITenantsHttpClient tenantsClient, IProjectsHttpClient projectsClient, ILogger<ApplicationUserProfileService> logger)
         {
             this.userManager = userManager;
             this.contextAccessor = contextAccessor;

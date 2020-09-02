@@ -14,11 +14,11 @@ namespace Ranger.Identity
 {
     public class TenantServiceRangerIdentityDbContext
     {
-        private readonly TenantsHttpClient tenantsClient;
+        private readonly ITenantsHttpClient tenantsClient;
         private readonly ILogger<TenantServiceRangerIdentityDbContext> logger;
         private readonly CloudSqlOptions cloudSqlOptions;
 
-        public TenantServiceRangerIdentityDbContext(TenantsHttpClient tenantsClient, CloudSqlOptions cloudSqlOptions, ILogger<TenantServiceRangerIdentityDbContext> logger)
+        public TenantServiceRangerIdentityDbContext(ITenantsHttpClient tenantsClient, CloudSqlOptions cloudSqlOptions, ILogger<TenantServiceRangerIdentityDbContext> logger)
         {
             this.cloudSqlOptions = cloudSqlOptions;
             this.logger = logger;

@@ -26,18 +26,18 @@ namespace Ranger.Identity
     public class UsersController : ControllerBase
     {
         private readonly Func<TenantOrganizationNameModel, RangerUserManager> userManager;
-        private readonly SubscriptionsHttpClient subscriptionsClient;
+        private readonly ISubscriptionsHttpClient subscriptionsClient;
         private readonly SignInManager<RangerUser> signInManager;
         private readonly IBusPublisher _busPublisher;
-        private readonly TenantsHttpClient tenantsClient;
+        private readonly ITenantsHttpClient tenantsClient;
         private readonly ILogger<UsersController> logger;
 
         public UsersController(
                 IBusPublisher busPublisher,
                 Func<TenantOrganizationNameModel, RangerUserManager> userManager,
-                SubscriptionsHttpClient subscriptionsClient,
+                ISubscriptionsHttpClient subscriptionsClient,
                 SignInManager<RangerUser> signInManager,
-                TenantsHttpClient tenantsClient,
+                ITenantsHttpClient tenantsClient,
                 ILogger<UsersController> logger
             )
         {
