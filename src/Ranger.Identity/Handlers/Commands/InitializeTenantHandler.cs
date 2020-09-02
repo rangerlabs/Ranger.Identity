@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Ranger.Common;
 using Ranger.Identity.Data;
 using Ranger.RabbitMQ;
+using Ranger.RabbitMQ.BusPublisher;
 
 namespace Ranger.Identity.Handlers.Commands
 {

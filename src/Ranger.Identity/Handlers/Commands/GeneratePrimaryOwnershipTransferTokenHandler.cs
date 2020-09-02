@@ -7,6 +7,7 @@ using Ranger.Common;
 using Ranger.Identity.Data;
 using Ranger.InternalHttpClient;
 using Ranger.RabbitMQ;
+using Ranger.RabbitMQ.BusPublisher;
 
 namespace Ranger.Identity.Handlers.Commands
 {

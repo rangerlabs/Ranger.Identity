@@ -10,6 +10,7 @@ using Ranger.InternalHttpClient;
 using Ranger.RabbitMQ;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using Ranger.RabbitMQ.BusPublisher;
 
 namespace Ranger.Identity
 {
@@ -93,7 +94,7 @@ namespace Ranger.Identity
 
             var emailToken = HttpUtility.UrlEncode(await localUserManager.GenerateEmailConfirmationTokenAsync(user));
 
-            busPublisher.Publish(new UserCreated(command.TenantId, user.Id, command.Email, user.FirstName,command.Role, emailToken, command.AuthorizedProjectIds), context);
+            busPublisher.Publish(new UserCreated(command.TenantId, user.Id, command.Email, user.FirstName, command.Role, emailToken, command.AuthorizedProjectIds), context);
         }
     }
 }

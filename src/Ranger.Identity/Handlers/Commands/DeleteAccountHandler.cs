@@ -10,6 +10,7 @@ using Ranger.InternalHttpClient;
 using Ranger.RabbitMQ;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using Ranger.RabbitMQ.BusPublisher;
 
 namespace Ranger.Identity
 {
