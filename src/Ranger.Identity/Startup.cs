@@ -35,6 +35,7 @@ namespace Ranger.Identity
 {
     public class Startup
     {
+        private const int TWELVE_HOURS_IN_SECONDS = 43200;
         private Random isTokenCleanerRandomizer = new Random();
         private readonly IConfiguration configuration;
         private IWebHostEnvironment Environment;
@@ -260,7 +261,7 @@ namespace Ranger.Identity
         }
 
         private bool isTokenCleaner => isTokenCleanerRandomizer.Next(1, 3) % 3 == 0 ? true : false;
-        private int maxBiDailyRandomCleanupInterval => 12 * isTokenCleanerRandomizer.Next(1, 4);
+        private int maxBiDailyRandomCleanupInterval => TWELVE_HOURS_IN_SECONDS * isTokenCleanerRandomizer.Next(1, 4);
 
         private void InitializeDatabase(IApplicationBuilder app, ILogger<Startup> logger)
         {
