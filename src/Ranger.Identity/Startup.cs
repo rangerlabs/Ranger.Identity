@@ -35,6 +35,7 @@ namespace Ranger.Identity
 {
     public class Startup
     {
+        private Random isTokenCleanerRandomizer = new Random();
         private readonly IConfiguration configuration;
         private IWebHostEnvironment Environment;
 
@@ -134,8 +135,8 @@ namespace Ranger.Identity
                         {
                             builder.UseNpgsql(configuration["cloudSql:ConnectionString"]);
                         };
-                        options.EnableTokenCleanup = true;
-                        options.TokenCleanupInterval = 60;
+                        options.EnableTokenCleanup = isTokenCleaner;
+                        options.TokenCleanupInterval = maxBiDailyRandomCleanupInterval;
                     });
 
             services.AddLocalApiAuthentication();
@@ -214,8 +215,8 @@ namespace Ranger.Identity
             forwardOptions.KnownProxies.Clear();
             app.UseForwardedHeaders(forwardOptions);
 
-            //TODO: Only initialize once and not in production
-            InitializeDatabase(app, loggerFactory.CreateLogger<Startup>());
+            //TODO: Only initialize once and not in production, move to a seperate process
+            // InitializeDatabase(app, loggerFactory.CreateLogger<Startup>());
 
             app.UseIdentityServer();
             app.UseRabbitMQ()
@@ -257,6 +258,9 @@ namespace Ranger.Identity
                 endpoints.MapRabbitMQHealthCheck();
             });
         }
+
+        private bool isTokenCleaner => isTokenCleanerRandomizer.Next(0, 2) % 3 == 0 ? true : false;
+        private int maxBiDailyRandomCleanupInterval => 12 * isTokenCleanerRandomizer.Next(1, 4);
 
         private void InitializeDatabase(IApplicationBuilder app, ILogger<Startup> logger)
         {
