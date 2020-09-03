@@ -259,7 +259,7 @@ namespace Ranger.Identity
             });
         }
 
-        private bool isTokenCleaner => isTokenCleanerRandomizer.Next(0, 2) % 2 == 0 ? true : false;
+        private bool isTokenCleaner => isTokenCleanerRandomizer.Next(1, 3) % 3 == 0 ? true : false;
         private int maxBiDailyRandomCleanupInterval => 12 * isTokenCleanerRandomizer.Next(1, 4);
 
         private void InitializeDatabase(IApplicationBuilder app, ILogger<Startup> logger)
