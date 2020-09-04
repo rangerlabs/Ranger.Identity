@@ -16,45 +16,25 @@ namespace Ranger.Identity
     public class TenantServiceRangerIdentityDbContext
     {
         private readonly ITenantsHttpClient tenantsClient;
-        private readonly IDatabase redisDb;
         private readonly ILogger<TenantServiceRangerIdentityDbContext> logger;
         private readonly CloudSqlOptions cloudSqlOptions;
 
-        public TenantServiceRangerIdentityDbContext(IConnectionMultiplexer connectionMultiplexer, ITenantsHttpClient tenantsClient, CloudSqlOptions cloudSqlOptions, ILogger<TenantServiceRangerIdentityDbContext> logger)
+        public TenantServiceRangerIdentityDbContext(ITenantsHttpClient tenantsClient, CloudSqlOptions cloudSqlOptions, ILogger<TenantServiceRangerIdentityDbContext> logger)
         {
             this.cloudSqlOptions = cloudSqlOptions;
             this.logger = logger;
             this.tenantsClient = tenantsClient;
-            redisDb = connectionMultiplexer.GetDatabase();
         }
 
-        public (DbContextOptions<T> options, ContextTenant contextTenant) GetDbContextOptions<T>(string tenantId)
-            where T : DbContext
+        public (DbContextOptions<RangerIdentityDbContext> options, TenantOrganizationNameModel tenantOrganizationNameModel) GetDbContextOptions(TenantOrganizationNameModel tenantOrganizationNameModel)
         {
             NpgsqlConnectionStringBuilder connectionBuilder = new NpgsqlConnectionStringBuilder(cloudSqlOptions.ConnectionString);
-            connectionBuilder.Username = tenantId;
-            var tenantDbKey = RedisKeys.TenantDbPassword(tenantId);
+            connectionBuilder.Username = tenantOrganizationNameModel.TenantId;
+            connectionBuilder.Password = tenantOrganizationNameModel.DatabasePassword;
 
-            ContextTenant contextTenant = null;
-            string redisValue = redisDb.StringGet(tenantDbKey);
-            if (string.IsNullOrWhiteSpace(redisValue))
-            {
-                logger.LogDebug("Retriving tenant password from Tenants service");
-                var apiResponse = tenantsClient.GetTenantByIdAsync<ContextTenant>(tenantId).Result;
-                connectionBuilder.Password = apiResponse.Result.DatabasePassword;
-                redisDb.StringSet(tenantDbKey, apiResponse.Result.DatabasePassword, TimeSpan.FromHours(1));
-                contextTenant = apiResponse.Result;
-            }
-            else
-            {
-                logger.LogDebug("Utilizing cached tenant password");
-                connectionBuilder.Password = redisValue;
-                contextTenant = new ContextTenant(tenantDbKey, redisValue, true);
-            }
-
-            var options = new DbContextOptionsBuilder<T>();
+            var options = new DbContextOptionsBuilder<RangerIdentityDbContext>();
             options.UseNpgsql(connectionBuilder.ToString());
-            return (options.Options, contextTenant);
+            return (options.Options, tenantOrganizationNameModel);
         }
     }
 }
