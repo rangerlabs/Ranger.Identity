@@ -319,6 +319,8 @@ namespace IdentityServer4.Quickstart.UI
             var (_, domain) = GetDomainFromRequestHost();
             var apiResponse = await _tenantsClient.GetTenantByDomainAsync<TenantOrganizationNameModel>(domain);
 
+            //TODO: if tenant is gone???
+
             return new LoginViewModel
             {
                 OrganizationName = apiResponse.Result.OrganizationName,
