@@ -30,6 +30,7 @@ using Ranger.ApiUtilities;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Ranger.Monitoring.HealthChecks;
 using Newtonsoft.Json.Converters;
+using Ranger.Redis;
 
 namespace Ranger.Identity
 {
@@ -99,6 +100,7 @@ namespace Ranger.Identity
             services.AddTransient<IPersistedGrantDbContextInitializer, PersistedGrantDbContextInitializer>();
             services.AddTransient<ILoginRoleRepository<RangerIdentityDbContext>, LoginRoleRepository<RangerIdentityDbContext>>();
 
+            services.AddRedis(configuration["redis:ConnectionString"]);
 
             services.AddIdentity<RangerUser, IdentityRole>(options =>
             {
