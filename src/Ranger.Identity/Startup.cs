@@ -31,6 +31,8 @@ using Microsoft.AspNetCore.Mvc.Versioning;
 using Ranger.Monitoring.HealthChecks;
 using Newtonsoft.Json.Converters;
 using Ranger.Redis;
+using StackExchange.Redis;
+using IdentityServer4.Configuration;
 
 namespace Ranger.Identity
 {
@@ -40,6 +42,7 @@ namespace Ranger.Identity
         private Random isTokenCleanerRandomizer = new Random();
         private readonly IConfiguration configuration;
         private IWebHostEnvironment Environment;
+        private IConnectionMultiplexer _connectionMultiplexer;
 
         public Startup(IWebHostEnvironment environment, IConfiguration configuration)
         {
@@ -100,7 +103,7 @@ namespace Ranger.Identity
             services.AddTransient<IPersistedGrantDbContextInitializer, PersistedGrantDbContextInitializer>();
             services.AddTransient<ILoginRoleRepository<RangerIdentityDbContext>, LoginRoleRepository<RangerIdentityDbContext>>();
 
-            services.AddRedis(configuration["redis:ConnectionString"]);
+            services.AddRedis(configuration["redis:ConnectionString"], out _connectionMultiplexer);
 
             services.AddIdentity<RangerUser, IdentityRole>(options =>
             {
@@ -121,6 +124,12 @@ namespace Ranger.Identity
                     options.Events.RaiseFailureEvents = true;
                     options.Events.RaiseSuccessEvents = true;
                     options.IssuerUri = configuration["identityServer:IssuerUri"];
+                    options.Caching = new CachingOptions
+                    {
+                        ClientStoreExpiration = TimeSpan.FromDays(7),
+                        ResourceStoreExpiration = TimeSpan.FromDays(7),
+                        CorsExpiration = TimeSpan.FromDays(7)
+                    };
                 })
                     .AddAspNetIdentity<RangerUser>()
                     .AddRedirectUriValidator<MultitenantRedirectUriValidator>()
@@ -140,7 +149,14 @@ namespace Ranger.Identity
                         };
                         options.EnableTokenCleanup = isTokenCleaner;
                         options.TokenCleanupInterval = maxBiDailyRandomCleanupInterval;
-                    });
+                    })
+                    .AddRedisCaching(options =>
+                    {
+                        options.RedisConnectionMultiplexer = _connectionMultiplexer;
+                    })
+                    .AddClientStoreCache<IdentityServer4.EntityFramework.Stores.ClientStore>()
+                    .AddResourceStoreCache<IdentityServer4.EntityFramework.Stores.ResourceStore>()
+                    .AddCorsPolicyCache<IdentityServer4.EntityFramework.Services.CorsPolicyService>();
 
             services.AddLocalApiAuthentication();
             services.AddSingleton<ICorsPolicyService, CorsPolicyService>();
