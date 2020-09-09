@@ -219,7 +219,7 @@ namespace Ranger.Identity
                     c.Resolve<IAuthenticationSchemeProvider>(),
                     c.Resolve<IUserConfirmation<RangerUser>>());
             }).InstancePerDependency();
-            builder.AddRabbitMq<Startup>();
+            builder.AddRabbitMq<Startup, RangerIdentityDbContext>();
         }
 
         public void Configure(IApplicationBuilder app, IHostApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory)

@@ -3,12 +3,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Ranger.Common;
+using Ranger.RabbitMQ;
 
 namespace Ranger.Identity.Data
 {
-    public class RangerIdentityDbContext : IdentityDbContext<RangerUser,
-                                                     IdentityRole,
-                                                     string>, IDataProtectionKeyContext
+    public class RangerIdentityDbContext : IdentityDbContext<RangerUser, IdentityRole, string>, IDataProtectionKeyContext, IOutboxStore
     {
 
         public RangerIdentityDbContext(DbContextOptions<RangerIdentityDbContext> options)
@@ -16,6 +15,7 @@ namespace Ranger.Identity.Data
         { }
 
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
+        public DbSet<OutboxMessage> Outbox { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
