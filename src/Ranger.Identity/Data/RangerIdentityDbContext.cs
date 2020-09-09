@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -9,10 +10,13 @@ namespace Ranger.Identity.Data
 {
     public class RangerIdentityDbContext : IdentityDbContext<RangerUser, IdentityRole, string>, IDataProtectionKeyContext, IOutboxStore
     {
+        private readonly IDataProtectionProvider dataProtectionProvider;
 
-        public RangerIdentityDbContext(DbContextOptions<RangerIdentityDbContext> options)
+        public RangerIdentityDbContext(DbContextOptions<RangerIdentityDbContext> options, IDataProtectionProvider dataProtectionProvider = null)
             : base(options)
-        { }
+        {
+            this.dataProtectionProvider = dataProtectionProvider;
+        }
 
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
         public DbSet<OutboxMessage> Outbox { get; set; }
