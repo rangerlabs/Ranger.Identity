@@ -19,7 +19,8 @@ namespace Ranger.Identity.Data
         }
 
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
-        public DbSet<OutboxMessage> Outbox { get; set; }
+        public DbSet<OutboxMessage> OutboxMessages { get; set; }
+        public DbSet<RangerRabbitMessage> RangerRabbitMessages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
