@@ -14,7 +14,7 @@ namespace Ranger.Identity.Data
         public string LastName { get; set; }
 
         [Required]
-        [StringLength(36)]
+        [StringLength(41)]
         public string TenantId { get; set; }
 
         [EmailAddress]
