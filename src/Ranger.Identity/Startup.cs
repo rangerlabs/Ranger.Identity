@@ -235,7 +235,7 @@ namespace Ranger.Identity
             app.UseForwardedHeaders(forwardOptions);
 
             //TODO: Only initialize once and not in production, move to a seperate process
-            // InitializeDatabase(app, loggerFactory.CreateLogger<Startup>());
+            InitializeDatabase(app, loggerFactory.CreateLogger<Startup>());
 
             app.UseIdentityServer();
             app.UseRabbitMQ()
